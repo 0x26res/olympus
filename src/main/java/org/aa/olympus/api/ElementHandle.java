@@ -9,4 +9,7 @@ public interface ElementHandle<K, S> {
   S getState();
 
   ElementStatus getStatus();
+
+  /** Did this element update since the last time the subscriber was notified */
+  boolean hasUpdated();
 }

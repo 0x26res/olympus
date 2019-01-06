@@ -14,8 +14,8 @@ It is inspired by some design patten seen in video game, such as the [game loop]
 # Overview
 
 The olympus engine is based on a DAG of Elements. 
-Each element can subscribe to others to receive updates notifications.
-When an element updates, it's dependencies will be updated accordingly. 
+Each element can subscribe to others in order to receive updates notifications.
+When an element updates, its subscribers will be updated accordingly. 
 Unlike stream processing engines, elements don't publish event, they update their states. 
 Instead of receiving events from other elements, they can read other elements states.
 
@@ -24,30 +24,29 @@ Updates are propagated through the engine based on the topological order of the 
 Only the elements that need to be updated are notified, and they are notified once and once only. 
 
 It works well for systems that don't have a lot of elements but receive a lot of updates on each individual elements. 
-It's also recommended when you have a complicated dependencies between your different elements
+It's also recommended when you have complicated dependencies between your different elements
 
 
 # Lexicon
 
 ### Element
 
-The base element of your engine. Think of it like a gear. It has a key, a state, and a mean to update its state.
-Elements depends on (or subscribe to) other elements and get notified when these other elements update.
-Upon update they can read the state of the elements they are subscribed to and update their state accoridngly
- 
+The base element of your engine Think of it like a gear within an engine. 
+It has a key, a state, and a mean to update its state.
+Elements depend on (or subscribe to) other elements.
+They get notified when these other elements update.
+Upon update they can read the state of the elements they are subscribed to and publish their state accordingly
 
 ### Entity
 
-In Object Oriented terms, elements would be the Object and entities the class. 
+In Object Oriented terms, elements would be the Object and entities the Class. 
 Each element belongs to an entity. 
 Each entity defines how elements are created and how they subscribe to other elements.
-
+It also has to declare which other entities they depend on. 
 
 ### Source
 
-A special entity whose elements can receive external event to modify its state.
-
-
+A special entity whose elements can receive external event to modify their state.
 
 # TODO:
 * Dynamic subscription example
@@ -59,3 +58,5 @@ A special entity whose elements can receive external event to modify its state.
 * State machine for elements, add failure, how to propagate
 * Fault tolerance
 * Add examples and FAQ to doc
+* Add Meta entities: store the new & deleted elements
+* One cycle for creation, one cycle for updates?

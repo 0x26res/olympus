@@ -12,6 +12,8 @@ import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementStatus;
 import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.Toolbox;
+import org.aa.olympus.api.UpdateContext;
 
 final class EntityManager<K, S> {
 
@@ -44,8 +46,9 @@ final class EntityManager<K, S> {
   ElementUnit<K, S> get(K key, boolean create) {
     ElementUnit<K, S> unit = units.get(key);
     if (unit == null && create) {
-      CreationContext creationContext = new CreationContext() {};
-      ElementUpdater<S> updater = elementManager.create(key, creationContext);
+      UpdateContext updateContext = null; // TODO: find
+      Toolbox toolbox = null; // TODO: provide
+      ElementUpdater<S> updater = elementManager.create(key, updateContext, toolbox);
       Preconditions.checkNotNull(
           updater,
           "%s an not refuse to create a %s",

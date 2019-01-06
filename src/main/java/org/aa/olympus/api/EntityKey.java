@@ -19,13 +19,21 @@ public final class EntityKey<K, S> {
     this.stateType = Preconditions.checkNotNull(stateType);
   }
 
-  private static <K, S> EntityKey<K, S> of(
+  public static <K, S> EntityKey<K, S> of(
       String name, TypeToken<K> keyType, TypeToken<S> stateType) {
     return new EntityKey<>(name, keyType, stateType);
   }
 
   public static <K, S> EntityKey<K, S> of(String name, Class<K> keyType, Class<S> stateType) {
     return of(name, TypeToken.of(keyType), TypeToken.of(stateType));
+  }
+
+  public static <K, S> EntityKey<K, S> of(String name, Class<K> keyType, TypeToken<S> stateType) {
+    return new EntityKey<>(name, TypeToken.of(keyType), stateType);
+  }
+
+  public static <K, S> EntityKey<K, S> of(String name, TypeToken<K> keyType, Class<S> stateType) {
+    return new EntityKey<>(name, keyType, TypeToken.of(stateType));
   }
 
   public String getName() {

@@ -2,6 +2,7 @@ package org.aa.olympus.impl;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,8 +24,8 @@ final class EngineImpl implements Engine {
       final Map<EntityKey, SourceManager> sources,
       final Map<EntityKey, EntityManager> entities) {
     this.sorted = sorted;
-    this.sources = sources;
-    this.entities = entities;
+    this.sources = ImmutableMap.copyOf(sources);
+    this.entities = ImmutableMap.copyOf(entities);
   }
 
   @Override
@@ -79,7 +80,7 @@ final class EngineImpl implements Engine {
 
   @Override
   public <K, S> S getState(EntityKey<K, S> entityKey, K key) {
-    EntityManager<K, S> entityManager = getEntityManger(entityKey);
+    EntityManager<K, S> entityManager = getEntityManager(entityKey);
     Preconditions.checkArgument(entityManager != null, "Unknown entity %s", entityKey);
     ElementUnit<K, S> unit = entityManager.get(key, false);
     if (unit != null) {
@@ -89,7 +90,8 @@ final class EngineImpl implements Engine {
     }
   }
 
-  private <K, S> EntityManager<K, S> getEntityManger(EntityKey<K, S> entityKey) {
+  <K, S> EntityManager<K, S> getEntityManager(EntityKey<K, S> entityKey) {
+    // This is safe as the EntityKet guarantees this through equality
     return (EntityManager<K, S>) entities.get(entityKey);
   }
 

@@ -8,17 +8,16 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-import org.aa.olympus.api.CreationContext;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementUpdater;
+import org.aa.olympus.api.Engine;
+import org.aa.olympus.api.EngineBuilder;
 import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
-import org.aa.olympus.api.Engine;
-import org.aa.olympus.api.EngineBuilder;
-import org.aa.olympus.api.Olympus;
 import org.aa.olympus.impl.UnsupportedEntityException;
 import org.junit.Assert;
 import org.junit.Test;
@@ -104,8 +103,10 @@ public class SparseMatrixSum {
   }
 
   private static class AggregateManager implements ElementManager<Position, Integer> {
+
     @Override
-    public ElementUpdater<Integer> create(Position key, CreationContext context) {
+    public ElementUpdater<Integer> create(
+        Position key, UpdateContext updateContext, Toolbox toolbox) {
       Preconditions.checkArgument(key.col == -1 || key.row == -1);
       return new Aggregator(CELL);
     }
@@ -125,7 +126,8 @@ public class SparseMatrixSum {
   private static class TotalManager implements ElementManager<Position, Integer> {
 
     @Override
-    public ElementUpdater<Integer> create(Position key, CreationContext context) {
+    public ElementUpdater<Integer> create(
+        Position key, UpdateContext updateContext, Toolbox toolbox) {
       Preconditions.checkArgument(key.row < 0 && key.col < 0);
       return new Aggregator(AGGREGATE);
     }

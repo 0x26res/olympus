@@ -121,7 +121,8 @@ public class ProductStock {
   public static class AggregateManager implements ElementManager<StockKey, Integer> {
 
     @Override
-    public ElementUpdater<Integer> create(StockKey key, CreationContext context) {
+    public ElementUpdater<Integer> create(StockKey key, UpdateContext updateContext,
+        Toolbox toolbox) {
       return new Updater();
     }
 
