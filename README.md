@@ -58,3 +58,4 @@ A special entity whose elements can receive external event to modify its state.
 * Add tracking information (created at, update at...)
 * State machine for elements, add failure, how to propagate
 * Fault tolerance
+* Add examples and FAQ to doc
