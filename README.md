@@ -60,3 +60,8 @@ A special entity whose elements can receive external event to modify their state
 * Add examples and FAQ to doc
 * Add Meta entities: store the new & deleted elements
 * One cycle for creation, one cycle for updates?
+
+# Rules
+
+* Everything must go downstream
+* subscriber / broadcaster (not listener) 

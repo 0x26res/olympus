@@ -1,9 +1,10 @@
 package org.aa.olympus.example;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -20,7 +21,7 @@ import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
 import org.junit.Test;
 
-public class DynamicSubscription {
+public class IndexCalculatorExample {
 
   public static final EntityKey<String, IndexComposition> COMPOSITIONS =
       EntityKey.of("COMPOSITIONS", String.class, IndexComposition.class);
@@ -28,14 +29,6 @@ public class DynamicSubscription {
       EntityKey.of("STOCK_PRICES", String.class, Double.class);
   public static final EntityKey<String, Double> INDEX_PRICES =
       EntityKey.of("INDEX_PRICES", String.class, Double.class);
-
-  public static class IndexComposition {
-    public final Map<String, Double> weights;
-
-    public IndexComposition(Map<String, Double> weights) {
-      this.weights = ImmutableMap.copyOf(weights);
-    }
-  }
 
   @Test
   public void test() {
@@ -51,36 +44,64 @@ public class DynamicSubscription {
     engine.setSourceState(STOCK_PRICES, "G", 2.0);
     engine.setSourceState(STOCK_PRICES, "IBM", 3.0);
 
-    
     engine.setSourceState(COMPOSITIONS, "TECH", new IndexComposition(ImmutableMap.of("A", 1.0)));
 
-    engine.runOnce(new Date());
-
+    engine.runOnce(LocalDateTime.now());
     System.out.println(engine.toString());
+
+    engine.setSourceState(
+        COMPOSITIONS, "NOT_READY", new IndexComposition(ImmutableMap.of("B", 1.0)));
+
+    engine.runOnce(LocalDateTime.now());
+    System.out.println(engine.toString());
+
+    engine.setSourceState(STOCK_PRICES, "B", 2.0);
+
+    engine.runOnce(LocalDateTime.now());
+    System.out.println(engine.toString());
+
+    engine.setSourceState(
+        COMPOSITIONS, "TECH", new IndexComposition(ImmutableMap.of("A", 1.0, "G", 2.0)));
+    engine.runOnce(LocalDateTime.now());
+    System.out.println(engine.toString());
+  }
+
+  public static class IndexComposition {
+    public final Map<String, Double> weights;
+
+    public IndexComposition(Map<String, Double> weights) {
+      this.weights = ImmutableMap.copyOf(weights);
+    }
+
+    @Override
+    public String toString() {
+      return MoreObjects.toStringHelper(this).add("weights", weights).toString();
+    }
   }
 
   public static class IndexPricesEntityManager implements ElementManager<String, Double> {
 
     @Override
     public ElementUpdater<Double> create(String key, UpdateContext updateContext, Toolbox toolbox) {
-      return new IndexPricesElemetUpdater(
-          toolbox.subscribe(COMPOSITIONS, key, SubscriptionType.STRONG));
+      return new IndexPricesElementUpdater(
+          toolbox.get(COMPOSITIONS, key).subscribe(SubscriptionType.STRONG));
     }
 
     @Override
-    public void onNewKey(ElementHandle newElement, Consumer<String> toNotify) {
-      if (newElement.getEntityKey().equals(COMPOSITIONS)) {
-        toNotify.accept(COMPOSITIONS.castHandle(newElement).getKey());
+    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<String> toNotify) {
+
+      if (entityKey.equals(COMPOSITIONS)) {
+        toNotify.accept((String) key);
       }
     }
   }
 
-  public static class IndexPricesElemetUpdater implements ElementUpdater<Double> {
+  public static class IndexPricesElementUpdater implements ElementUpdater<Double> {
 
     final ElementHandle<String, IndexComposition> composition;
     final List<ElementHandle<String, Double>> elements;
 
-    public IndexPricesElemetUpdater(ElementHandle<String, IndexComposition> composition) {
+    public IndexPricesElementUpdater(ElementHandle<String, IndexComposition> composition) {
       this.composition = composition;
       this.elements = new ArrayList<>();
     }
@@ -90,18 +111,19 @@ public class DynamicSubscription {
         Double previous, UpdateContext updateContext, Toolbox toolbox) {
 
       if (composition.hasUpdated()) {
-        for (ElementHandle<String, Double> elementHandle : elements) {
-          toolbox.subscribe(
-              elementHandle.getEntityKey(), elementHandle.getKey(), SubscriptionType.NONE);
-        }
+        elements.forEach(p -> p.subscribe(SubscriptionType.NONE));
         elements.clear();
         for (String stock : composition.getState().weights.keySet()) {
-          elements.add(toolbox.subscribe(STOCK_PRICES, stock, SubscriptionType.STRONG));
+          elements.add(toolbox.get(STOCK_PRICES, stock).subscribe(SubscriptionType.STRONG));
         }
       }
+      // This could be done more efficiently (and more convoluted by storing both weight and
+      // handel in together in the vector
       double result = 0;
       for (ElementHandle<String, Double> stock : elements) {
-        result += composition.getState().weights.get(stock.getKey()) * stock.getState();
+        result +=
+            composition.getState().weights.get(stock.getKey())
+                * stock.getStateOrDefault(Double.NaN);
       }
       return UpdateResult.update(result);
     }

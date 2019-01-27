@@ -3,7 +3,7 @@ package org.aa.olympus.impl;
 import static org.hamcrest.core.StringStartsWith.startsWith;
 
 import com.google.common.collect.ImmutableSet;
-import java.util.Date;
+import java.time.LocalDateTime;
 import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.Olympus;
 import org.aa.olympus.example.HelloWorld;
@@ -30,26 +30,26 @@ public class EngineBuilderImplTest {
 
     engine.setSourceState(HelloWorld.HELLO, "UC", "HELLO");
     engine.setSourceState(HelloWorld.WORLD, "UC", "WORLD");
-    engine.runOnce(new Date());
+    engine.runOnce(LocalDateTime.now());
     System.out.println(engine.toString());
 
     engine.setSourceState(HelloWorld.HELLO, "LC", "hello");
     engine.setSourceState(HelloWorld.WORLD, "LC", "world");
-    engine.runOnce(new Date());
+    engine.runOnce(LocalDateTime.now());
     System.out.println(engine.toString());
 
     engine.setSourceState(HelloWorld.HELLO, "LC", "hello");
     engine.setSourceState(HelloWorld.WORLD, "LC", "world");
-    engine.runOnce(new Date());
+    engine.runOnce(LocalDateTime.now());
     System.out.println(engine.toString());
 
     engine.setSourceState(HelloWorld.HELLO, "CC", "Hello");
     // Only partial
-    engine.runOnce(new Date());
+    engine.runOnce(LocalDateTime.now());
     System.out.println(engine.toString());
 
     engine.setSourceState(HelloWorld.WORLD, "CC", "World");
-    engine.runOnce(new Date());
+    engine.runOnce(LocalDateTime.now());
     System.out.println(engine.toString());
   }
 

@@ -3,21 +3,23 @@ package org.aa.olympus.impl;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
-import java.util.Date;
-import java.util.HashMap;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.UpdateContext;
 
 final class EngineImpl implements Engine {
 
   private final List<EntityKey> sorted;
   private final Map<EntityKey, SourceManager> sources;
   private final Map<EntityKey, EntityManager> entities;
+
+  // TODO: consider adding an extra layer of abstraction to run the engine
+  private UpdateContext updateContext;
 
   EngineImpl(
       List<EntityKey> sorted,
@@ -35,7 +37,9 @@ final class EngineImpl implements Engine {
   }
 
   @Override
-  public void runOnce(Date time) {
+  public void runOnce(LocalDateTime time) {
+    updateContext =
+        new UpdateContextImpl(time, updateContext == null ? 1 : updateContext.getUpdateId() + 1);
     propagateCreations();
     propagateUpdates();
   }
@@ -49,7 +53,7 @@ final class EngineImpl implements Engine {
   }
 
   private <K, S> void runEntity(EntityManager<K, S> entityManager) {
-    entityManager.run();
+    entityManager.run(updateContext);
   }
 
   private void propagateCreations() {
@@ -60,20 +64,26 @@ final class EngineImpl implements Engine {
   }
 
   private <K, S> void propagateCreations(EntityManager<K, S> entityManager) {
-    Map<K, Set<ElementUnit>> subscriptions = new HashMap<>();
     for (EntityKey key : entityManager.getDependencies()) {
       EntityManager dependency = entities.get(key);
-      // TODO: understand why we need an intermediate variable
-      List<ElementUnit<?, ?>> handles = dependency.getCreated();
-      for (ElementUnit<?, ?> elementUnit : handles) {
-        Consumer<K> consumer =
-            k -> subscriptions.computeIfAbsent(k, p -> new HashSet<>()).add(elementUnit);
-        entityManager.getElementManager().onNewKey(elementUnit.getHandleAdapter(), consumer);
-      }
+      propagateCreations(dependency, entityManager);
     }
-    for (Map.Entry<K, Set<ElementUnit>> entry : subscriptions.entrySet()) {
-      ElementUnit<K, S> unit = entityManager.get(entry.getKey(), true);
-      unit.addBroadcasters(entry.getValue());
+  }
+
+  private <KB, SB, KS, SS> void propagateCreations(
+      EntityManager<KB, SB> broadcasters, EntityManager<KS, SS> subscribers) {
+
+    HashSet<KS> toCreate = new HashSet<>();
+    List<ElementUnit<KB, SB>> handles = broadcasters.getCreated();
+    for (ElementUnit<KB, SB> elementUnit : handles) {
+      Consumer<KS> consumer = toCreate::add;
+      subscribers
+          .getElementManager()
+          .onNewKey(broadcasters.getKey(), elementUnit.getKey(), consumer);
+    }
+
+    for (KS key : toCreate) {
+      ElementUnit<KS, SS> unit = subscribers.get(key, true);
       unit.stain();
     }
   }

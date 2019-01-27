@@ -1,15 +1,14 @@
 package org.aa.olympus.example;
 
 import java.util.function.Consumer;
-import org.aa.olympus.api.CreationContext;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
-import org.aa.olympus.api.Olympus;
 import org.aa.olympus.impl.UnsupportedEntityException;
 
 public class HelloWorld {
@@ -51,13 +50,13 @@ public class HelloWorld {
   public static class ConcatenatorElementManager implements ElementManager<String, String> {
 
     @Override
-    public ElementUpdater<String> create(String key, CreationContext context) {
+    public ElementUpdater<String> create(String key, UpdateContext updateContext, Toolbox toolbox) {
       return new Concatenator();
     }
 
     @Override
-    public void onNewKey(ElementHandle newElement, Consumer<String> toNotify) {
-      toNotify.accept((String) newElement.getKey());
+    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<String> toNotify) {
+      toNotify.accept((String) key);
     }
   }
 }

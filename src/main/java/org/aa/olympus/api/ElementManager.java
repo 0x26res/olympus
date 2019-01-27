@@ -6,5 +6,5 @@ public interface ElementManager<K, S> {
 
   ElementUpdater<S> create(K key, UpdateContext updateContext, Toolbox toolbox);
 
-  void onNewKey(ElementHandle newElement, Consumer<K> toNotify);
+  <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<K> toNotify);
 }

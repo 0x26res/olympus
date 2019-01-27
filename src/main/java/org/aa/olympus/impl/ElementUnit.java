@@ -1,36 +1,43 @@
 package org.aa.olympus.impl;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import java.util.HashSet;
 import java.util.Set;
-import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementStatus;
 import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.Toolbox;
+import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
 import org.aa.olympus.api.UpdateStatus;
 
 final class ElementUnit<K, S> {
   private final EntityKey<K, S> entityKey;
   private final K key;
-  private final ElementUpdater<S> updater;
-  private final HandleAdapter handleAdapter;
-
   private final Set<ElementUnit> broadcasters = new HashSet<>();
-  private final Set<ElementUnit> listeners = new HashSet<>();
-
+  private final Set<ElementUnit> subscribers = new HashSet<>();
+  private ElementUpdater<S> updater;
   private ElementStatus status;
   private S state;
   private int notifications;
+  private int updateId = -1;
 
-  ElementUnit(EntityKey<K, S> entityKey, K key, ElementUpdater<S> updater) {
+  ElementUnit(EntityKey<K, S> entityKey, K key) {
     this.entityKey = entityKey;
     this.key = key;
-    this.updater = updater;
-    handleAdapter = new HandleAdapter();
+    this.updater = null;
+    status = ElementStatus.SHADOW;
+  }
 
+  void setUpdater(ElementUpdater<S> updater) {
+    Preconditions.checkNotNull(updater);
+    Preconditions.checkState(this.updater == null);
+    this.updater = updater;
     status = ElementStatus.CREATED;
+  }
+
+  public EntityKey<K, S> getEntityKey() {
+    return entityKey;
   }
 
   public K getKey() {
@@ -49,19 +56,25 @@ final class ElementUnit<K, S> {
     return notifications;
   }
 
-  ElementHandle<K, S> getHandleAdapter() {
-    return handleAdapter;
+  public int getUpdateId() {
+    return updateId;
+  }
+
+  ElementHandleAdapter<K, S> createHandleAdapter(ElementUnit subscriber) {
+    return new ElementHandleAdapter<>(this, subscriber);
   }
 
   void stain() {
     ++notifications;
   }
 
-  public void update() {
-    UpdateResult<S> result = this.updater.update(state, null, null);
+  public void update(UpdateContext updateContext, Toolbox toolbox) {
+    UpdateResult<S> result = this.updater.update(state, updateContext, toolbox);
     if (handleUpdateResult(result)) {
-      listeners.forEach(ElementUnit::stain);
+      subscribers.forEach(ElementUnit::stain);
     }
+    this.updateId = updateContext.getUpdateId();
+    this.notifications = 0;
   }
 
   private boolean handleUpdateResult(UpdateResult<S> results) {
@@ -89,45 +102,13 @@ final class ElementUnit<K, S> {
     }
   }
 
-  void addBroadcasters(Set<ElementUnit> newBroadcasters) {
-    for (ElementUnit<?, ?> newBroadcaster : newBroadcasters) {
-      if (broadcasters.add(newBroadcaster)) {
-        updater.onNewElement(newBroadcaster.getHandleAdapter());
-        newBroadcaster.listeners.add(this);
-      }
-    }
+  void subscribe(ElementUnit broadcaster) {
+    this.broadcasters.add(broadcaster);
+    broadcaster.subscribers.add(broadcaster);
   }
 
-  private final class HandleAdapter implements ElementHandle<K, S> {
-
-    @Override
-    public EntityKey<K, S> getEntityKey() {
-      return entityKey;
-    }
-
-    @Override
-    public K getKey() {
-      return key;
-    }
-
-    @Override
-    public S getState() {
-      return state;
-    }
-
-    @Override
-    public ElementStatus getStatus() {
-      return status;
-    }
-
-    @Override
-    public String toString() {
-      return MoreObjects.toStringHelper(ElementHandle.class)
-          .add("entityKey", entityKey)
-          .add("key", key)
-          .add("status", status)
-          .add("state", state)
-          .toString();
-    }
+  void unsubscribe(ElementUnit broadcaster) {
+    this.broadcasters.remove(broadcaster);
+    broadcaster.subscribers.remove(broadcaster);
   }
 }

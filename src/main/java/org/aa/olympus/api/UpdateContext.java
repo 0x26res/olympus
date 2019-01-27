@@ -6,5 +6,5 @@ public interface UpdateContext {
 
   LocalDateTime getTime();
 
-  long getUpdateId();
+  int getUpdateId();
 }

@@ -37,7 +37,8 @@ final class EngineAssembler {
     return copy;
   }
 
-  private static Map<EntityKey, Set<EntityKey>> makeImmutable(Map<EntityKey, Set<EntityKey>> input) {
+  private static Map<EntityKey, Set<EntityKey>> makeImmutable(
+      Map<EntityKey, Set<EntityKey>> input) {
     ImmutableMap.Builder<EntityKey, Set<EntityKey>> builder = ImmutableMap.builder();
     input.forEach((k, v) -> builder.put(k, ImmutableSet.copyOf(v)));
     return builder.build();
@@ -102,7 +103,7 @@ final class EngineAssembler {
         new EntityManager<>(
             sourceUnit.key,
             new ElementManagerAdapter<>(units),
-            ImmutableSet.of(),
+            ImmutableMap.of(),
             getDependents(sourceUnit.key));
 
     entities.put(sourceUnit.key, entityManager);
@@ -113,7 +114,10 @@ final class EngineAssembler {
 
     for (EngineBuilderImpl.EntityUnit entity : builder.entities.values()) {
       entities.put(
-          entity.getEntityKey(), entity.createManager(getDependents(entity.getEntityKey())));
+          entity.getEntityKey(),
+          entity.createManager(
+              getDependenciesManagers((entity.getEntityKey())),
+              getDependents(entity.getEntityKey())));
     }
   }
 
@@ -123,6 +127,14 @@ final class EngineAssembler {
 
   private Set<EntityKey> getDependents(EntityKey entityKey) {
     return entityToDependents.getOrDefault(entityKey, Collections.emptySet());
+  }
+
+  private Map<EntityKey, EntityManager> getDependenciesManagers(EntityKey entityKey) {
+
+    return getDependencies(entityKey)
+        .stream()
+        .map(entities::get)
+        .collect(Collectors.toMap(EntityManager::getKey, p -> p));
   }
 
   private void sort() {

@@ -1,23 +1,22 @@
 package org.aa.olympus.example;
 
 import com.google.common.collect.ImmutableSet;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.aa.olympus.api.CreationContext;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.Engine;
+import org.aa.olympus.api.EngineBuilder;
 import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
-import org.aa.olympus.api.EngineBuilder;
-import org.aa.olympus.api.Olympus;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -31,6 +30,10 @@ public class PositionTracking {
       Olympus.createKey("ACCOUNT", PositionKey.class, Integer.class);
   private static final EntityKey<PositionKey, Integer> COMPANY =
       Olympus.createKey("COMPANY", PositionKey.class, Integer.class);
+
+  private static PositionKey key(String product, String maturity, String account) {
+    return new PositionKey(product, maturity, account);
+  }
 
   @Test
   public void demo() {
@@ -55,23 +58,20 @@ public class PositionTracking {
 
     Engine engine = engineBuilder.build();
 
-    engine.setSourceState(POSITION,  key("S&P500", "DEC18", "FOO"), 10);
-    engine.setSourceState(POSITION,  key("S&P500", "MAR18", "FOO"), -10);
-    engine.setSourceState(POSITION,  key("S&P500", "MAR18", "BAR"), 30);
-    engine.setSourceState(POSITION,  key("DOW30", "MAR18", "BAR"), -20);
+    engine.setSourceState(POSITION, key("S&P500", "DEC18", "FOO"), 10);
+    engine.setSourceState(POSITION, key("S&P500", "MAR18", "FOO"), -10);
+    engine.setSourceState(POSITION, key("S&P500", "MAR18", "BAR"), 30);
+    engine.setSourceState(POSITION, key("DOW30", "MAR18", "BAR"), -20);
 
-    engine.runOnce(new Date());
+    engine.runOnce(LocalDateTime.now());
 
     Assert.assertEquals(10, engine.getState(COMPANY, key(null, null, null)).intValue());
     Assert.assertEquals(0, engine.getState(ACCOUNT, key(null, null, "FOO")).intValue());
     Assert.assertEquals(10, engine.getState(ACCOUNT, key(null, null, "BAR")).intValue());
-    Assert.assertEquals(30, engine.getState(PRODUCT_ACCOUNT, key("S&P500", null, "BAR")).intValue());
-    Assert.assertEquals(-20, engine.getState(PRODUCT_ACCOUNT, key("DOW30", null, "BAR")).intValue());
-
-  }
-
-  private static PositionKey key(String product, String maturity, String account) {
-    return new PositionKey(product, maturity, account);
+    Assert.assertEquals(
+        30, engine.getState(PRODUCT_ACCOUNT, key("S&P500", null, "BAR")).intValue());
+    Assert.assertEquals(
+        -20, engine.getState(PRODUCT_ACCOUNT, key("DOW30", null, "BAR")).intValue());
   }
 
   private static final class PositionKey {
@@ -106,7 +106,6 @@ public class PositionTracking {
     }
   }
 
-
   public static final class PositionManager implements ElementManager<PositionKey, Integer> {
 
     final EntityKey<PositionKey, Integer> subKey;
@@ -119,13 +118,15 @@ public class PositionTracking {
     }
 
     @Override
-    public ElementUpdater<Integer> create(PositionKey key, CreationContext context) {
+    public ElementUpdater<Integer> create(
+        PositionKey key, UpdateContext updateContext, Toolbox toolbox) {
       return new PositionUpdater(subKey);
     }
 
     @Override
-    public void onNewKey(ElementHandle newElement, Consumer<PositionKey> toNotify) {
-      toNotify.accept(keyTransformer.apply(subKey.castHandle(newElement).getKey()));
+    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<PositionKey> toNotify) {
+
+      toNotify.accept(keyTransformer.apply((PositionKey) key));
     }
   }
 

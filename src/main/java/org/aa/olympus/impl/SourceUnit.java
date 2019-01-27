@@ -22,6 +22,10 @@ final class SourceUnit<K, S> implements ElementUpdater<S> {
     elementUnit.stain();
   }
 
+  boolean ready() {
+    return elementUnit != null;
+  }
+
   @Override
   public UpdateResult<S> update(S previous, UpdateContext updateContext, Toolbox toolbox) {
     if (lastState == null) {

@@ -3,22 +3,21 @@ package org.aa.olympus.example;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-import org.aa.olympus.api.CreationContext;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementUpdater;
+import org.aa.olympus.api.Engine;
+import org.aa.olympus.api.EngineBuilder;
 import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
-import org.aa.olympus.api.Engine;
-import org.aa.olympus.api.EngineBuilder;
-import org.aa.olympus.api.Olympus;
 import org.junit.Test;
 
 /** This example doesn't work ATM because there are circular dependencies. */
@@ -48,7 +47,7 @@ public class ProductStock {
     engine.setSourceState(STOCK, PEAR, 31);
     engine.setSourceState(STOCK, PEN, 1000);
 
-    engine.runOnce(new Date());
+    engine.runOnce(LocalDateTime.now());
 
     System.out.println(engine.toString());
   }
@@ -121,14 +120,14 @@ public class ProductStock {
   public static class AggregateManager implements ElementManager<StockKey, Integer> {
 
     @Override
-    public ElementUpdater<Integer> create(StockKey key, UpdateContext updateContext,
-        Toolbox toolbox) {
+    public ElementUpdater<Integer> create(
+        StockKey key, UpdateContext updateContext, Toolbox toolbox) {
       return new Updater();
     }
 
     @Override
-    public void onNewKey(ElementHandle newElement, Consumer<StockKey> toNotify) {
-      toNotify.accept(STOCK.castHandle(newElement).getKey().parent());
+    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<StockKey> toNotify) {
+      toNotify.accept(((StockKey) key).parent());
     }
   }
 }

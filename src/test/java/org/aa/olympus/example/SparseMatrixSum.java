@@ -3,8 +3,8 @@ package org.aa.olympus.example;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -50,19 +50,19 @@ public class SparseMatrixSum {
     engine.setSourceState(CELL, Position.of(2, 0), 110);
     engine.setSourceState(CELL, Position.of(3, 0), 120);
 
-    engine.runOnce(new Date());
+    engine.runOnce(LocalDateTime.now());
     Assert.assertEquals(363, engine.getState(TOTAL, Position.of(-1, -1)).intValue());
 
     engine.setSourceState(CELL, Position.of(3, 0), 130);
-    engine.runOnce(new Date());
+    engine.runOnce(LocalDateTime.now());
     Assert.assertEquals(373, engine.getState(TOTAL, Position.of(-1, -1)).intValue());
 
     engine.setSourceState(CELL, Position.of(3, 0), 0);
-    engine.runOnce(new Date());
+    engine.runOnce(LocalDateTime.now());
     Assert.assertEquals(243, engine.getState(TOTAL, Position.of(-1, -1)).intValue());
 
     engine.setSourceState(CELL, Position.of(200, 23), 120);
-    engine.runOnce(new Date());
+    engine.runOnce(LocalDateTime.now());
     Assert.assertEquals(363, engine.getState(TOTAL, Position.of(-1, -1)).intValue());
     Assert.assertEquals(120, engine.getState(AGGREGATE, Position.of(200, -1)).intValue());
     Assert.assertEquals(120, engine.getState(AGGREGATE, Position.of(-1, 23)).intValue());
@@ -112,13 +112,14 @@ public class SparseMatrixSum {
     }
 
     @Override
-    public void onNewKey(ElementHandle newElement, Consumer<Position> toNotify) {
-      if (newElement.getEntityKey() == CELL) {
-        Position position = CELL.castHandle(newElement).getKey();
+    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<Position> toNotify) {
+
+      if (entityKey.equals(CELL)) {
+        Position position = (Position) key;
         toNotify.accept(new Position(-1, position.col));
         toNotify.accept(new Position(position.row, -1));
       } else {
-        throw new UnsupportedEntityException(newElement.getEntityKey());
+        throw new UnsupportedEntityException(entityKey);
       }
     }
   }
@@ -133,8 +134,9 @@ public class SparseMatrixSum {
     }
 
     @Override
-    public void onNewKey(ElementHandle newElement, Consumer<Position> toNotify) {
-      if (AGGREGATE.castHandle(newElement).getKey().row == -1) {
+    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<Position> toNotify) {
+      Position position = (Position) key;
+      if (position.row == -1) {
         toNotify.accept(new Position(-1, -1));
       }
     }

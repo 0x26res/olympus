@@ -8,11 +8,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import org.aa.olympus.api.ElementManager;
-import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EngineBuilder;
+import org.aa.olympus.api.EntityKey;
 
-final public class EngineBuilderImpl implements EngineBuilder {
+public final class EngineBuilderImpl implements EngineBuilder {
 
   Map<EntityKey, EntityUnit> entities = new HashMap<>();
   Map<EntityKey, SourceUnit> sources = new HashMap<>();
@@ -89,7 +89,9 @@ final public class EngineBuilderImpl implements EngineBuilder {
       this.dependencies = ImmutableSet.copyOf(dependencies);
     }
 
-    EntityManager<K, S> createManager(Set<EntityKey> dependents) {
+    EntityManager<K, S> createManager(
+        Map<EntityKey, EntityManager> dependencies, Set<EntityKey> dependents) {
+      Preconditions.checkArgument(dependencies.keySet().equals(this.dependencies));
       return new EntityManager<>(entityKey, elementManager, dependencies, dependents);
     }
 

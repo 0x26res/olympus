@@ -2,10 +2,11 @@ package org.aa.olympus.impl;
 
 import java.util.Map;
 import java.util.function.Consumer;
-import org.aa.olympus.api.CreationContext;
-import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementUpdater;
+import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.Toolbox;
+import org.aa.olympus.api.UpdateContext;
 
 final class SourceManager<K, S> {
 
@@ -24,6 +25,9 @@ final class SourceManager<K, S> {
       ElementUnit<K, S> elementUnit = entityManager.get(key, true);
       unit = units.get(key);
       unit.setElementUnit(elementUnit);
+    } else if (!unit.ready()) {
+      ElementUnit<K, S> elementUnit = entityManager.get(key, false);
+      unit.setElementUnit(elementUnit);
     }
     unit.setState(state);
   }
@@ -36,14 +40,14 @@ final class SourceManager<K, S> {
     }
 
     @Override
-    public ElementUpdater<S> create(K key, CreationContext context) {
+    public ElementUpdater<S> create(K key, UpdateContext updateContext, Toolbox toolbox) {
       SourceUnit<K, S> unit = new SourceUnit<>();
       units.put(key, unit);
       return unit;
     }
 
     @Override
-    public void onNewKey(ElementHandle newElement, Consumer<K> toNotify) {
+    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<K> toNotify) {
       throw new IllegalArgumentException("Should not be notified of new elements");
     }
   }

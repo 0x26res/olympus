@@ -6,6 +6,8 @@ import com.google.common.base.Strings;
 import com.google.common.reflect.TypeToken;
 import java.util.Objects;
 
+// TODO: make an interface, add a creator to Olympus
+// TODO: add a qualfied key (entity key + element key)
 public final class EntityKey<K, S> {
 
   private final String name;
@@ -50,6 +52,11 @@ public final class EntityKey<K, S> {
               "%s doesn't match %s for %s",
               elementHandle.getEntityKey(), this, elementHandle.getKey()));
     }
+  }
+
+  @Deprecated // use the qualified key to do that safely
+  public K castKey(K key) {
+    return (K) key;
   }
 
   @Override
