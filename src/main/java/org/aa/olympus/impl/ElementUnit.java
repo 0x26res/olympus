@@ -20,7 +20,7 @@ final class ElementUnit<K, S> {
   private ElementStatus status;
   private S state;
   private int notifications;
-  private int updateId = -1;
+  private UpdateContext updateContext =  UpdateContextImpl.NONE;
 
   ElementUnit(EntityKey<K, S> entityKey, K key) {
     this.entityKey = entityKey;
@@ -56,8 +56,13 @@ final class ElementUnit<K, S> {
     return notifications;
   }
 
+  @Deprecated // ?
   public int getUpdateId() {
-    return updateId;
+    return updateContext.getUpdateId();
+  }
+
+  public UpdateContext getUpdateContext() {
+    return updateContext;
   }
 
   ElementHandleAdapter<K, S> createHandleAdapter(ElementUnit subscriber) {
@@ -73,7 +78,7 @@ final class ElementUnit<K, S> {
     if (handleUpdateResult(result)) {
       subscribers.forEach(ElementUnit::stain);
     }
-    this.updateId = updateContext.getUpdateId();
+    this.updateContext = updateContext;
     this.notifications = 0;
   }
 
@@ -104,11 +109,11 @@ final class ElementUnit<K, S> {
 
   void subscribe(ElementUnit broadcaster) {
     this.broadcasters.add(broadcaster);
-    broadcaster.subscribers.add(broadcaster);
+    broadcaster.subscribers.add(this);
   }
 
   void unsubscribe(ElementUnit broadcaster) {
     this.broadcasters.remove(broadcaster);
-    broadcaster.subscribers.remove(broadcaster);
+    broadcaster.subscribers.remove(this);
   }
 }

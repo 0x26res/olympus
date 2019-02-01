@@ -11,5 +11,8 @@ public interface Engine {
   void runOnce(LocalDateTime time);
 
   /** Gets the state of one entity */
+  // TODO: add access to an element view w/ status, updateid and more
   <K, S> S getState(EntityKey<K, S> entityKey, K key);
+
+  <K, S> ElementView<K, S> getElement(EntityKey<K, S> entityKey, K key);
 }

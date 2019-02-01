@@ -1,5 +1,6 @@
 package org.aa.olympus.api;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import java.util.Objects;
 
@@ -53,5 +54,13 @@ public final class UpdateResult<T> {
 
   public T getState() {
     return state;
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("status", status)
+        .add("state", state)
+        .toString();
   }
 }

@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.aa.olympus.api.ElementView;
 import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.UpdateContext;
@@ -95,6 +96,18 @@ final class EngineImpl implements Engine {
     ElementUnit<K, S> unit = entityManager.get(key, false);
     if (unit != null) {
       return unit.getState();
+    } else {
+      return null;
+    }
+  }
+
+  @Override
+  public <K, S> ElementView<K, S> getElement(EntityKey<K, S> entityKey, K key) {
+    EntityManager<K, S> entityManager = getEntityManager(entityKey);
+    Preconditions.checkArgument(entityManager != null, "Unknown entity %s", entityKey);
+    ElementUnit<K, S> unit = entityManager.get(key, false);
+    if (unit != null) {
+      return new ElementViewImpl<>(unit);
     } else {
       return null;
     }

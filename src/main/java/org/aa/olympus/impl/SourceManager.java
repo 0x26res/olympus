@@ -25,9 +25,11 @@ final class SourceManager<K, S> {
       ElementUnit<K, S> elementUnit = entityManager.get(key, true);
       unit = units.get(key);
       unit.setElementUnit(elementUnit);
+      elementUnit.stain();
     } else if (!unit.ready()) {
       ElementUnit<K, S> elementUnit = entityManager.get(key, false);
       unit.setElementUnit(elementUnit);
+      elementUnit.stain();
     }
     unit.setState(state);
   }
