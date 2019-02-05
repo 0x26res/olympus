@@ -3,15 +3,17 @@ package org.aa.olympus.impl;
 import com.google.common.base.Preconditions;
 import java.util.HashSet;
 import java.util.Set;
+import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementStatus;
 import org.aa.olympus.api.ElementUpdater;
+import org.aa.olympus.api.ElementView;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
 import org.aa.olympus.api.UpdateStatus;
 
-final class ElementUnit<K, S> {
+final class ElementUnit<K, S> implements ElementView<K, S> {
   private final EntityKey<K, S> entityKey;
   private final K key;
   private final Set<ElementUnit> broadcasters = new HashSet<>();
@@ -44,11 +46,11 @@ final class ElementUnit<K, S> {
     return key;
   }
 
-  ElementStatus getStatus() {
+  public ElementStatus getStatus() {
     return status;
   }
 
-  S getState() {
+  public S getState() {
     return state;
   }
 
@@ -80,6 +82,10 @@ final class ElementUnit<K, S> {
     }
     this.updateContext = updateContext;
     this.notifications = 0;
+  }
+
+  public <KB, SB> void onNewElement(ElementHandle<KB, SB> broadcaster) {
+    this.updater.onNewElement(broadcaster);
   }
 
   private boolean handleUpdateResult(UpdateResult<S> results) {

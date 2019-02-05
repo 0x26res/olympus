@@ -15,11 +15,13 @@ import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EngineBuilder;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.Olympus;
+import org.aa.olympus.api.SubscriptionType;
 import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
 import org.aa.olympus.impl.UnsupportedEntityException;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class SparseMatrixSum {
@@ -31,16 +33,23 @@ public class SparseMatrixSum {
   private static final EntityKey<Position, Integer> TOTAL =
       Olympus.createKey("TOTAL", Position.class, Integer.class);
 
-  @Test
-  public void test() {
+  private static final Position ROOT = new Position(-1, -1);
 
+  private Engine engine;
+
+  @Before
+  public void setUp() {
     EngineBuilder builder = Olympus.builder();
     builder.registerSource(CELL);
 
     builder.registerEntity(AGGREGATE, new AggregateManager(), ImmutableSet.of(CELL));
     builder.registerEntity(TOTAL, new TotalManager(), ImmutableSet.of(AGGREGATE));
 
-    Engine engine = builder.build();
+    engine = builder.build();
+  }
+
+  @Test
+  public void test() {
 
     engine.setSourceState(CELL, Position.of(0, 0), 10);
     engine.setSourceState(CELL, Position.of(0, 1), 11);
@@ -118,6 +127,8 @@ public class SparseMatrixSum {
         Position position = (Position) key;
         toNotify.accept(new Position(-1, position.col));
         toNotify.accept(new Position(position.row, -1));
+      } else if (entityKey.equals(AGGREGATE)) {
+        toNotify.accept(ROOT);
       } else {
         throw new UnsupportedEntityException(entityKey);
       }
@@ -137,7 +148,7 @@ public class SparseMatrixSum {
     public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<Position> toNotify) {
       Position position = (Position) key;
       if (position.row == -1) {
-        toNotify.accept(new Position(-1, -1));
+        toNotify.accept(ROOT);
       }
     }
   }
@@ -159,7 +170,7 @@ public class SparseMatrixSum {
 
     @Override
     public <K2, S2> void onNewElement(ElementHandle<K2, S2> handle) {
-      elements.add(elementsEntity.castHandle(handle));
+      elements.add(elementsEntity.castHandle(handle).subscribe(SubscriptionType.STRONG));
     }
   }
 }

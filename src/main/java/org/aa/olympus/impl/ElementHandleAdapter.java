@@ -5,6 +5,7 @@ import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementStatus;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.SubscriptionType;
+import org.aa.olympus.api.UpdateContext;
 
 final class ElementHandleAdapter<K, S> implements ElementHandle<K, S> {
 
@@ -41,6 +42,11 @@ final class ElementHandleAdapter<K, S> implements ElementHandle<K, S> {
   @Override
   public boolean hasUpdated() {
     return subscriber == null || broadcaster.getUpdateId() > subscriber.getUpdateId();
+  }
+
+  @Override
+  public UpdateContext getUpdateContext() {
+    return broadcaster.getUpdateContext();
   }
 
   @Override

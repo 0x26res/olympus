@@ -4,9 +4,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import org.aa.olympus.api.ElementView;
 import org.aa.olympus.api.Engine;
@@ -74,18 +76,21 @@ final class EngineImpl implements Engine {
   private <KB, SB, KS, SS> void propagateCreations(
       EntityManager<KB, SB> broadcasters, EntityManager<KS, SS> subscribers) {
 
-    HashSet<KS> toCreate = new HashSet<>();
+    HashMap<KS, Set<ElementUnit<KB, SB>>> toNotify = new HashMap<>();
     List<ElementUnit<KB, SB>> handles = broadcasters.getCreated();
     for (ElementUnit<KB, SB> elementUnit : handles) {
-      Consumer<KS> consumer = toCreate::add;
+      Consumer<KS> consumer = p -> toNotify.computeIfAbsent(p, k -> new HashSet<>()).add(elementUnit);
       subscribers
           .getElementManager()
           .onNewKey(broadcasters.getKey(), elementUnit.getKey(), consumer);
     }
 
-    for (KS key : toCreate) {
-      ElementUnit<KS, SS> unit = subscribers.get(key, true);
-      unit.stain();
+    for (Map.Entry<KS, Set<ElementUnit<KB, SB>>> entry : toNotify.entrySet() ) {
+      ElementUnit<KS, SS> subscriber = subscribers.get(entry.getKey(), true);
+      for (ElementUnit<KB, SB> broadcaster : entry.getValue()) {
+        subscriber.onNewElement(broadcaster.createHandleAdapter(subscriber));
+        subscriber.stain();
+      }
     }
   }
 
@@ -107,7 +112,7 @@ final class EngineImpl implements Engine {
     Preconditions.checkArgument(entityManager != null, "Unknown entity %s", entityKey);
     ElementUnit<K, S> unit = entityManager.get(key, false);
     if (unit != null) {
-      return new ElementViewImpl<>(unit);
+      return unit;
     } else {
       return null;
     }

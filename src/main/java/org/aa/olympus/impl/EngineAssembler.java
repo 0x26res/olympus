@@ -112,12 +112,20 @@ final class EngineAssembler {
 
   private void buildEntities() {
 
-    for (EngineBuilderImpl.EntityUnit entity : builder.entities.values()) {
-      entities.put(
-          entity.getEntityKey(),
-          entity.createManager(
-              getDependenciesManagers((entity.getEntityKey())),
-              getDependents(entity.getEntityKey())));
+    for (EntityKey entityKey : topologicalSort) {
+      EngineBuilderImpl.EntityUnit entity = builder.entities.get(entityKey);
+      if (entity != null) {
+        entities.put(
+            entity.getEntityKey(),
+            entity.createManager(
+                getDependenciesManagers((entity.getEntityKey())),
+                getDependents(entity.getEntityKey())));
+      } else {
+        Preconditions.checkArgument(
+            builder.sources.containsKey(entityKey),
+            "%s should be a source",
+            entityKey);
+      }
     }
   }
 
@@ -133,7 +141,7 @@ final class EngineAssembler {
 
     return getDependencies(entityKey)
         .stream()
-        .map(entities::get)
+        .map(p -> Preconditions.checkNotNull(entities.get(p), "Missing deps %s", p))
         .collect(Collectors.toMap(EntityManager::getKey, p -> p));
   }
 
