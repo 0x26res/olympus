@@ -36,73 +36,6 @@ public class IndexCalculatorExample {
       EntityKey.of("STOCK_PRICES", String.class, Double.class);
   public static final EntityKey<String, Double> INDEX_PRICES =
       EntityKey.of("INDEX_PRICES", String.class, Double.class);
-
-  public static class IndexComposition {
-    public final Map<String, Double> weights;
-
-    public IndexComposition(Map<String, Double> weights) {
-      this.weights = ImmutableMap.copyOf(weights);
-    }
-
-    @Override
-    public String toString() {
-      return MoreObjects.toStringHelper(this).add("weights", weights).toString();
-    }
-  }
-
-  public static class IndexPricesEntityManager implements ElementManager<String, Double> {
-
-    @Override
-    public ElementUpdater<Double> create(String key, UpdateContext updateContext, Toolbox toolbox) {
-      return new IndexPricesElementUpdater(
-          toolbox.get(COMPOSITIONS, key).subscribe(SubscriptionType.STRONG));
-    }
-
-    @Override
-    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<String> toNotify) {
-
-      if (entityKey.equals(COMPOSITIONS)) {
-        toNotify.accept((String) key);
-      }
-    }
-  }
-
-  public static class IndexPricesElementUpdater implements ElementUpdater<Double> {
-
-    final ElementHandle<String, IndexComposition> composition;
-    final List<ElementHandle<String, Double>> elements;
-
-    public IndexPricesElementUpdater(ElementHandle<String, IndexComposition> composition) {
-      this.composition = composition;
-      this.elements = new ArrayList<>();
-    }
-
-    @Override
-    public UpdateResult<Double> update(
-        Double previous, UpdateContext updateContext, Toolbox toolbox) {
-
-      if (composition.hasUpdated()) {
-        elements.forEach(p -> p.subscribe(SubscriptionType.NONE));
-        elements.clear();
-        for (String stock : composition.getState().weights.keySet()) {
-          elements.add(toolbox.get(STOCK_PRICES, stock).subscribe(SubscriptionType.STRONG));
-        }
-      }
-      // This could be done more efficiently (and more convoluted by storing both weight and
-      // handel in together in the vector
-      double result = 0;
-      for (ElementHandle<String, Double> stock : elements) {
-        result +=
-            composition.getState().weights.get(stock.getKey())
-                * stock.getStateOrDefault(Double.NaN);
-      }
-      return UpdateResult.update(result);
-    }
-
-    @Override
-    public <K2, S2> void onNewElement(ElementHandle<K2, S2> handle) {}
-  }
-
   private Engine engine;
 
   @Before
@@ -181,5 +114,71 @@ public class IndexCalculatorExample {
     Assert.assertEquals(expectedStatus, view.getStatus());
     Assert.assertEquals(expectedState, view.getState());
     Assert.assertEquals(expectedUpdateId, view.getUpdateContext().getUpdateId());
+  }
+
+  public static class IndexComposition {
+    public final Map<String, Double> weights;
+
+    public IndexComposition(Map<String, Double> weights) {
+      this.weights = ImmutableMap.copyOf(weights);
+    }
+
+    @Override
+    public String toString() {
+      return MoreObjects.toStringHelper(this).add("weights", weights).toString();
+    }
+  }
+
+  public static class IndexPricesEntityManager implements ElementManager<String, Double> {
+
+    @Override
+    public ElementUpdater<Double> create(String key, UpdateContext updateContext, Toolbox toolbox) {
+      return new IndexPricesElementUpdater(
+          toolbox.get(COMPOSITIONS, key).subscribe(SubscriptionType.STRONG));
+    }
+
+    @Override
+    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<String> toNotify) {
+
+      if (entityKey.equals(COMPOSITIONS)) {
+        toNotify.accept((String) key);
+      }
+    }
+  }
+
+  public static class IndexPricesElementUpdater implements ElementUpdater<Double> {
+
+    final ElementHandle<String, IndexComposition> composition;
+    final List<ElementHandle<String, Double>> elements;
+
+    public IndexPricesElementUpdater(ElementHandle<String, IndexComposition> composition) {
+      this.composition = composition;
+      this.elements = new ArrayList<>();
+    }
+
+    @Override
+    public UpdateResult<Double> update(
+        Double previous, UpdateContext updateContext, Toolbox toolbox) {
+
+      if (composition.hasUpdated()) {
+        elements.forEach(p -> p.subscribe(SubscriptionType.NONE));
+        elements.clear();
+        for (String stock : composition.getState().weights.keySet()) {
+          elements.add(toolbox.get(STOCK_PRICES, stock).subscribe(SubscriptionType.STRONG));
+        }
+      }
+      // This could be done more efficiently (and more convoluted by storing both weight and
+      // handel in together in the vector
+      double result = 0;
+      for (ElementHandle<String, Double> stock : elements) {
+        result +=
+            composition.getState().weights.get(stock.getKey())
+                * stock.getStateOrDefault(Double.NaN);
+      }
+      return UpdateResult.update(result);
+    }
+
+    @Override
+    public <K2, S2> void onNewElement(ElementHandle<K2, S2> handle) {}
   }
 }

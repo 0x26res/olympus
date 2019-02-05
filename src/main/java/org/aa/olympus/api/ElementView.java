@@ -11,5 +11,4 @@ public interface ElementView<K, S> {
   ElementStatus getStatus();
 
   UpdateContext getUpdateContext();
-
 }

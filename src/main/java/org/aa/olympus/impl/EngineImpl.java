@@ -79,13 +79,14 @@ final class EngineImpl implements Engine {
     HashMap<KS, Set<ElementUnit<KB, SB>>> toNotify = new HashMap<>();
     List<ElementUnit<KB, SB>> handles = broadcasters.getCreated();
     for (ElementUnit<KB, SB> elementUnit : handles) {
-      Consumer<KS> consumer = p -> toNotify.computeIfAbsent(p, k -> new HashSet<>()).add(elementUnit);
+      Consumer<KS> consumer =
+          p -> toNotify.computeIfAbsent(p, k -> new HashSet<>()).add(elementUnit);
       subscribers
           .getElementManager()
           .onNewKey(broadcasters.getKey(), elementUnit.getKey(), consumer);
     }
 
-    for (Map.Entry<KS, Set<ElementUnit<KB, SB>>> entry : toNotify.entrySet() ) {
+    for (Map.Entry<KS, Set<ElementUnit<KB, SB>>> entry : toNotify.entrySet()) {
       ElementUnit<KS, SS> subscriber = subscribers.get(entry.getKey(), true);
       for (ElementUnit<KB, SB> broadcaster : entry.getValue()) {
         subscriber.onNewElement(broadcaster.createHandleAdapter(subscriber));

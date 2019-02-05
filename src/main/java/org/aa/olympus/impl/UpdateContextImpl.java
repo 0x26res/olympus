@@ -5,7 +5,7 @@ import org.aa.olympus.api.UpdateContext;
 
 public class UpdateContextImpl implements UpdateContext {
 
-  public final static UpdateContext NONE = new UpdateContextImpl(LocalDateTime.MIN, -1);
+  public static final UpdateContext NONE = new UpdateContextImpl(LocalDateTime.MIN, -1);
 
   private final LocalDateTime time;
   private final int updateId;

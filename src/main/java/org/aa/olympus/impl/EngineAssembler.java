@@ -122,9 +122,7 @@ final class EngineAssembler {
                 getDependents(entity.getEntityKey())));
       } else {
         Preconditions.checkArgument(
-            builder.sources.containsKey(entityKey),
-            "%s should be a source",
-            entityKey);
+            builder.sources.containsKey(entityKey), "%s should be a source", entityKey);
       }
     }
   }

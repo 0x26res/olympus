@@ -58,9 +58,6 @@ public final class UpdateResult<T> {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("status", status)
-        .add("state", state)
-        .toString();
+    return MoreObjects.toStringHelper(this).add("status", status).add("state", state).toString();
   }
 }

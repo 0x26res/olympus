@@ -22,7 +22,7 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
   private ElementStatus status;
   private S state;
   private int notifications;
-  private UpdateContext updateContext =  UpdateContextImpl.NONE;
+  private UpdateContext updateContext = UpdateContextImpl.NONE;
 
   ElementUnit(EntityKey<K, S> entityKey, K key) {
     this.entityKey = entityKey;
