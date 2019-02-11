@@ -59,15 +59,19 @@ public class IndexCalculatorExample {
     engine.setSourceState(COMPOSITIONS, "TECH", new IndexComposition(ImmutableMap.of("IBM", 1.0)));
     engine.runOnce(LocalDateTime.now());
     System.out.println(engine.toString());
-
     Assert.assertEquals(3.0, engine.getState(INDEX_PRICES, "TECH"), 0.0);
 
     engine.setSourceState(
         COMPOSITIONS, "TECH", new IndexComposition(ImmutableMap.of("IBM", 0.5, "G", 0.5)));
     engine.runOnce(LocalDateTime.now());
     System.out.println(engine.toString());
-
     Assert.assertEquals(2.0 * 0.5 + 3.0 * 0.5, engine.getState(INDEX_PRICES, "TECH"), 0.0);
+
+    engine.setSourceState(
+        COMPOSITIONS, "TECH", new IndexComposition(ImmutableMap.of("IBM", 0.5, "G", 1.0)));
+    engine.runOnce(LocalDateTime.now());
+    System.out.println(engine.toString());
+    Assert.assertEquals(2.0 * 1.0 + 3.0 * 0.5, engine.getState(INDEX_PRICES, "TECH"), 0.0);
   }
 
   @Test
@@ -152,7 +156,7 @@ public class IndexCalculatorExample {
     final List<ElementHandle<String, Double>> elements;
 
     public IndexPricesElementUpdater(ElementHandle<String, IndexComposition> composition) {
-      this.composition = composition;
+      this.composition = composition.subscribe(SubscriptionType.STRONG);
       this.elements = new ArrayList<>();
     }
 
@@ -167,8 +171,8 @@ public class IndexCalculatorExample {
           elements.add(toolbox.get(STOCK_PRICES, stock).subscribe(SubscriptionType.STRONG));
         }
       }
-      // This could be done more efficiently (and more convoluted by storing both weight and
-      // handel in together in the vector
+      // This could be done more efficiently (but less readable) by storing both weight and
+      // handles in together in the vector
       double result = 0;
       for (ElementHandle<String, Double> stock : elements) {
         result +=

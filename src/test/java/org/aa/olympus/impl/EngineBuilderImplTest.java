@@ -20,35 +20,35 @@ public class EngineBuilderImplTest {
   public void helloWorldTest() {
     Engine engine =
         Olympus.builder()
-            .registerSource(HelloWorld.HELLO)
-            .registerSource(HelloWorld.WORLD)
+            .registerSource(HelloWorld.LEFT)
+            .registerSource(HelloWorld.RIGHT)
             .registerEntity(
-                HelloWorld.HELLO_WORLD,
+                HelloWorld.BOTH,
                 new ConcatenatorElementManager(),
-                ImmutableSet.of(HelloWorld.HELLO, HelloWorld.WORLD))
+                ImmutableSet.of(HelloWorld.LEFT, HelloWorld.RIGHT))
             .build();
 
-    engine.setSourceState(HelloWorld.HELLO, "UC", "HELLO");
-    engine.setSourceState(HelloWorld.WORLD, "UC", "WORLD");
+    engine.setSourceState(HelloWorld.LEFT, "UC", "LEFT");
+    engine.setSourceState(HelloWorld.RIGHT, "UC", "RIGHT");
     engine.runOnce(LocalDateTime.now());
     System.out.println(engine.toString());
 
-    engine.setSourceState(HelloWorld.HELLO, "LC", "hello");
-    engine.setSourceState(HelloWorld.WORLD, "LC", "world");
+    engine.setSourceState(HelloWorld.LEFT, "LC", "hello");
+    engine.setSourceState(HelloWorld.RIGHT, "LC", "world");
     engine.runOnce(LocalDateTime.now());
     System.out.println(engine.toString());
 
-    engine.setSourceState(HelloWorld.HELLO, "LC", "hello");
-    engine.setSourceState(HelloWorld.WORLD, "LC", "world");
+    engine.setSourceState(HelloWorld.LEFT, "LC", "hello");
+    engine.setSourceState(HelloWorld.RIGHT, "LC", "world");
     engine.runOnce(LocalDateTime.now());
     System.out.println(engine.toString());
 
-    engine.setSourceState(HelloWorld.HELLO, "CC", "Hello");
+    engine.setSourceState(HelloWorld.LEFT, "CC", "Hello");
     // Only partial
     engine.runOnce(LocalDateTime.now());
     System.out.println(engine.toString());
 
-    engine.setSourceState(HelloWorld.WORLD, "CC", "World");
+    engine.setSourceState(HelloWorld.RIGHT, "CC", "World");
     engine.runOnce(LocalDateTime.now());
     System.out.println(engine.toString());
   }
@@ -59,18 +59,17 @@ public class EngineBuilderImplTest {
     expectedException.expectMessage(startsWith("Missing dependencies for hello_world"));
 
     Olympus.builder()
-        .registerSource(HelloWorld.HELLO)
+        .registerSource(HelloWorld.LEFT)
         .registerEntity(
-            HelloWorld.HELLO_WORLD,
+            HelloWorld.BOTH,
             new ConcatenatorElementManager(),
-            ImmutableSet.of(HelloWorld.HELLO, HelloWorld.WORLD));
+            ImmutableSet.of(HelloWorld.LEFT, HelloWorld.RIGHT));
   }
 
   @Test
   public void noDependenciesTest() {
     expectedException.expect(IllegalArgumentException.class);
     Olympus.builder()
-        .registerEntity(
-            HelloWorld.HELLO_WORLD, new ConcatenatorElementManager(), ImmutableSet.of());
+        .registerEntity(HelloWorld.BOTH, new ConcatenatorElementManager(), ImmutableSet.of());
   }
 }

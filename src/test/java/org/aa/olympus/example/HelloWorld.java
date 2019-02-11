@@ -13,23 +13,23 @@ import org.aa.olympus.impl.UnsupportedEntityException;
 
 public class HelloWorld {
 
-  public static EntityKey<String, String> HELLO =
-      Olympus.createKey("hello", String.class, String.class);
-  public static EntityKey<String, String> WORLD =
-      Olympus.createKey("world", String.class, String.class);
-  public static EntityKey<String, String> HELLO_WORLD =
-      Olympus.createKey("hello_world", String.class, String.class);
+  public static EntityKey<String, String> RIGHT =
+      Olympus.createKey("RIGHT", String.class, String.class);
+  public static EntityKey<String, String> LEFT =
+      Olympus.createKey("LEFT", String.class, String.class);
+  public static EntityKey<String, String> BOTH =
+      Olympus.createKey("BOTH", String.class, String.class);
 
   public static class Concatenator implements ElementUpdater<String> {
 
-    private ElementHandle<String, String> hello;
-    private ElementHandle<String, String> world;
+    private ElementHandle<String, String> left;
+    private ElementHandle<String, String> right;
 
     @Override
     public UpdateResult<String> update(
         String previous, UpdateContext updateContext, Toolbox toolbox) {
-      if (hello != null && world != null) {
-        return UpdateResult.maybe(previous, hello.getState() + ' ' + world.getState());
+      if (left != null && right != null) {
+        return UpdateResult.maybe(previous, left.getState() + ' ' + right.getState());
       } else {
         return UpdateResult.notReady();
       }
@@ -37,10 +37,10 @@ public class HelloWorld {
 
     @Override
     public <K2, S2> void onNewElement(ElementHandle<K2, S2> handle) {
-      if (handle.getEntityKey().equals(HELLO)) {
-        hello = HELLO.castHandle(handle);
-      } else if (handle.getEntityKey().equals(WORLD)) {
-        world = WORLD.castHandle(handle);
+      if (handle.getEntityKey().equals(RIGHT)) {
+        right = RIGHT.castHandle(handle);
+      } else if (handle.getEntityKey().equals(LEFT)) {
+        left = LEFT.castHandle(handle);
       } else {
         throw new UnsupportedEntityException(handle.getEntityKey());
       }
