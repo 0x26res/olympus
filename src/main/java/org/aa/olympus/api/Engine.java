@@ -2,6 +2,9 @@ package org.aa.olympus.api;
 
 import java.time.LocalDateTime;
 
+/**
+ * Holds an instance of the engine
+ */
 public interface Engine {
 
   /** Updates the state of into source entity element */
@@ -11,8 +14,8 @@ public interface Engine {
   void runOnce(LocalDateTime time);
 
   /** Gets the state of one entity */
-  // TODO: add access to an element view w/ status, updateid and more
   <K, S> S getState(EntityKey<K, S> entityKey, K key);
 
+  /** Gets a view of the a given element */
   <K, S> ElementView<K, S> getElement(EntityKey<K, S> entityKey, K key);
 }

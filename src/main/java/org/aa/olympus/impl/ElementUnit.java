@@ -58,8 +58,16 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
     return notifications;
   }
 
-  @Deprecated // ?
-  public int getUpdateId() {
+  @Override
+  public S getStateOrDefault(S defaultState) {
+    if (status == ElementStatus.UPDATED) {
+      return state;
+    } else {
+      return defaultState;
+    }
+  }
+
+  int getUpdateId() {
     return updateContext.getUpdateId();
   }
 
@@ -84,8 +92,11 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
     this.notifications = 0;
   }
 
-  public <KB, SB> void onNewElement(ElementHandle<KB, SB> broadcaster) {
-    this.updater.onNewElement(broadcaster);
+  <KB, SB> void onNewElement(ElementHandle<KB, SB> broadcaster) {
+    // TODO: rethrow any error with informative message
+    if (this.updater.onNewElement(broadcaster)) {
+      this.stain();
+    }
   }
 
   private boolean handleUpdateResult(UpdateResult<S> results) {

@@ -23,13 +23,13 @@ import org.junit.Test;
 public class PositionTracking {
 
   private static final EntityKey<PositionKey, Integer> POSITION =
-      Olympus.createKey("POSITION", PositionKey.class, Integer.class);
+      Olympus.key("POSITION", PositionKey.class, Integer.class);
   private static final EntityKey<PositionKey, Integer> PRODUCT_ACCOUNT =
-      Olympus.createKey("PRODUCT_ACCOUNT", PositionKey.class, Integer.class);
+      Olympus.key("PRODUCT_ACCOUNT", PositionKey.class, Integer.class);
   private static final EntityKey<PositionKey, Integer> ACCOUNT =
-      Olympus.createKey("ACCOUNT", PositionKey.class, Integer.class);
+      Olympus.key("ACCOUNT", PositionKey.class, Integer.class);
   private static final EntityKey<PositionKey, Integer> COMPANY =
-      Olympus.createKey("COMPANY", PositionKey.class, Integer.class);
+      Olympus.key("COMPANY", PositionKey.class, Integer.class);
 
   private static PositionKey key(String product, String maturity, String account) {
     return new PositionKey(product, maturity, account);
@@ -145,8 +145,9 @@ public class PositionTracking {
     }
 
     @Override
-    public <K2, S2> void onNewElement(ElementHandle<K2, S2> handle) {
+    public <K2, S2> boolean onNewElement(ElementHandle<K2, S2> handle) {
       children.add(subKey.castHandle(handle));
+      return true;
     }
   }
 }

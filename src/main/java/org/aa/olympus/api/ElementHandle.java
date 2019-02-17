@@ -10,5 +10,4 @@ public interface ElementHandle<K, S> extends ElementView<K, S> {
 
   ElementHandle<K, S> subscribe(SubscriptionType subscriptionType);
 
-  S getStateOrDefault(S defaultState);
 }

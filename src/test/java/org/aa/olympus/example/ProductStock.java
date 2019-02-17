@@ -18,6 +18,7 @@ import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
+import org.aa.olympus.impl.UnsupportedEntityException;
 import org.junit.Test;
 
 /** This example doesn't work ATM because there are circular dependencies. */
@@ -25,9 +26,9 @@ import org.junit.Test;
 public class ProductStock {
 
   private static final EntityKey<StockKey, Integer> STOCK =
-      Olympus.createKey("STOCK", StockKey.class, Integer.class);
+      Olympus.key("STOCK", StockKey.class, Integer.class);
   private static final EntityKey<StockKey, Integer> AGGREGATE =
-      Olympus.createKey("AGGREGATE", StockKey.class, Integer.class);
+      Olympus.key("AGGREGATE", StockKey.class, Integer.class);
 
   private static final StockKey POTATO = StockKey.of("food", "vegetable", "potato");
   private static final StockKey APPLE = StockKey.of("food", "fruit", "apple");
@@ -108,11 +109,15 @@ public class ProductStock {
     }
 
     @Override
-    public <K2, S2> void onNewElement(ElementHandle<K2, S2> handle) {
+    public <K2, S2> boolean onNewElement(ElementHandle<K2, S2> handle) {
       if (handle.getEntityKey().equals(STOCK)) {
         children.add(STOCK.castHandle(handle));
+        return true;
       } else if (handle.getEntityKey().equals(AGGREGATE)) {
         children.add(AGGREGATE.castHandle(handle));
+        return true;
+      } else {
+        throw new UnsupportedEntityException(handle.getEntityKey());
       }
     }
   }

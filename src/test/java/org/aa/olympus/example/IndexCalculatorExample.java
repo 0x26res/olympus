@@ -31,11 +31,11 @@ import org.junit.Test;
 public class IndexCalculatorExample {
 
   public static final EntityKey<String, IndexComposition> COMPOSITIONS =
-      EntityKey.of("COMPOSITIONS", String.class, IndexComposition.class);
+      Olympus.key("COMPOSITIONS", String.class, IndexComposition.class);
   public static final EntityKey<String, Double> STOCK_PRICES =
-      EntityKey.of("STOCK_PRICES", String.class, Double.class);
+      Olympus.key("STOCK_PRICES", String.class, Double.class);
   public static final EntityKey<String, Double> INDEX_PRICES =
-      EntityKey.of("INDEX_PRICES", String.class, Double.class);
+      Olympus.key("INDEX_PRICES", String.class, Double.class);
   private Engine engine;
 
   @Before
@@ -183,6 +183,8 @@ public class IndexCalculatorExample {
     }
 
     @Override
-    public <K2, S2> void onNewElement(ElementHandle<K2, S2> handle) {}
+    public <K2, S2> boolean onNewElement(ElementHandle<K2, S2> handle) {
+      throw new UnsupportedOperationException("This should not happen");
+    }
   }
 }

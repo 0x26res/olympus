@@ -1,5 +1,6 @@
 package org.aa.olympus.api;
 
+// TODO: add more convenience functions (get or default, get optional...)
 public interface ElementView<K, S> {
 
   EntityKey<K, S> getEntityKey();
@@ -11,4 +12,6 @@ public interface ElementView<K, S> {
   ElementStatus getStatus();
 
   UpdateContext getUpdateContext();
+
+  S getStateOrDefault(S defaultState);
 }

@@ -7,35 +7,19 @@ import com.google.common.reflect.TypeToken;
 import java.util.Objects;
 
 // TODO: make an interface, add a creator to Olympus
-// TODO: add a qualfied key (entity key + element key)
+// TODO: add a qualified key (entity key + element key)
+@SuppressWarnings("UnstableApiUsage")
 public final class EntityKey<K, S> {
 
   private final String name;
   private final TypeToken<K> keyType;
   private final TypeToken<S> stateType;
 
-  private EntityKey(String name, TypeToken<K> keyType, TypeToken<S> stateType) {
+  EntityKey(String name, TypeToken<K> keyType, TypeToken<S> stateType) {
     Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
     this.name = name;
     this.keyType = Preconditions.checkNotNull(keyType);
     this.stateType = Preconditions.checkNotNull(stateType);
-  }
-
-  public static <K, S> EntityKey<K, S> of(
-      String name, TypeToken<K> keyType, TypeToken<S> stateType) {
-    return new EntityKey<>(name, keyType, stateType);
-  }
-
-  public static <K, S> EntityKey<K, S> of(String name, Class<K> keyType, Class<S> stateType) {
-    return of(name, TypeToken.of(keyType), TypeToken.of(stateType));
-  }
-
-  public static <K, S> EntityKey<K, S> of(String name, Class<K> keyType, TypeToken<S> stateType) {
-    return new EntityKey<>(name, TypeToken.of(keyType), stateType);
-  }
-
-  public static <K, S> EntityKey<K, S> of(String name, TypeToken<K> keyType, Class<S> stateType) {
-    return new EntityKey<>(name, keyType, TypeToken.of(stateType));
   }
 
   public String getName() {
@@ -56,6 +40,7 @@ public final class EntityKey<K, S> {
 
   @Deprecated // use the qualified key to do that safely
   public K castKey(K key) {
+    // TODO: add a proper check on the type
     return (K) key;
   }
 

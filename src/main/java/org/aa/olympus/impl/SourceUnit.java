@@ -38,7 +38,7 @@ final class SourceUnit<K, S> implements ElementUpdater<S> {
   }
 
   @Override
-  public <K2, S2> void onNewElement(ElementHandle<K2, S2> handle) {
+  public <K2, S2> boolean onNewElement(ElementHandle<K2, S2> handle) {
     throw new IllegalStateException("Should not be notified of new elements");
   }
 }

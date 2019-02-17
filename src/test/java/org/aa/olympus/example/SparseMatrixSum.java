@@ -27,11 +27,11 @@ import org.junit.Test;
 public class SparseMatrixSum {
 
   private static final EntityKey<Position, Integer> CELL =
-      Olympus.createKey("CELL", Position.class, Integer.class);
+      Olympus.key("CELL", Position.class, Integer.class);
   private static final EntityKey<Position, Integer> AGGREGATE =
-      Olympus.createKey("AGGREGATE", Position.class, Integer.class);
+      Olympus.key("AGGREGATE", Position.class, Integer.class);
   private static final EntityKey<Position, Integer> TOTAL =
-      Olympus.createKey("TOTAL", Position.class, Integer.class);
+      Olympus.key("TOTAL", Position.class, Integer.class);
 
   private static final Position ROOT = new Position(-1, -1);
 
@@ -169,8 +169,9 @@ public class SparseMatrixSum {
     }
 
     @Override
-    public <K2, S2> void onNewElement(ElementHandle<K2, S2> handle) {
+    public <K2, S2> boolean onNewElement(ElementHandle<K2, S2> handle) {
       elements.add(elementsEntity.castHandle(handle).subscribe(SubscriptionType.STRONG));
+      return true;
     }
   }
 }

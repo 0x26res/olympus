@@ -14,11 +14,11 @@ import org.aa.olympus.impl.UnsupportedEntityException;
 public class HelloWorld {
 
   public static EntityKey<String, String> RIGHT =
-      Olympus.createKey("RIGHT", String.class, String.class);
+      Olympus.key("RIGHT", String.class, String.class);
   public static EntityKey<String, String> LEFT =
-      Olympus.createKey("LEFT", String.class, String.class);
+      Olympus.key("LEFT", String.class, String.class);
   public static EntityKey<String, String> BOTH =
-      Olympus.createKey("BOTH", String.class, String.class);
+      Olympus.key("BOTH", String.class, String.class);
 
   public static class Concatenator implements ElementUpdater<String> {
 
@@ -36,11 +36,13 @@ public class HelloWorld {
     }
 
     @Override
-    public <K2, S2> void onNewElement(ElementHandle<K2, S2> handle) {
+    public <K2, S2> boolean onNewElement(ElementHandle<K2, S2> handle) {
       if (handle.getEntityKey().equals(RIGHT)) {
         right = RIGHT.castHandle(handle);
+        return true;
       } else if (handle.getEntityKey().equals(LEFT)) {
         left = LEFT.castHandle(handle);
+        return true;
       } else {
         throw new UnsupportedEntityException(handle.getEntityKey());
       }
