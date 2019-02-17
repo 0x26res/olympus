@@ -56,7 +56,7 @@ public class EngineBuilderImplTest {
   @Test
   public void missingDependenciesTest() {
     expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage(startsWith("Missing dependencies for hello_world"));
+    expectedException.expectMessage(startsWith("Missing dependencies for BOTH"));
 
     Olympus.builder()
         .registerSource(HelloWorld.LEFT)

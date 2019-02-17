@@ -137,8 +137,7 @@ public class IndexCalculatorExample {
 
     @Override
     public ElementUpdater<Double> create(String key, UpdateContext updateContext, Toolbox toolbox) {
-      return new IndexPricesElementUpdater(
-          toolbox.get(COMPOSITIONS, key).subscribe(SubscriptionType.STRONG));
+      return new IndexPricesElementUpdater();
     }
 
     @Override
@@ -152,11 +151,10 @@ public class IndexCalculatorExample {
 
   public static class IndexPricesElementUpdater implements ElementUpdater<Double> {
 
-    final ElementHandle<String, IndexComposition> composition;
+    ElementHandle<String, IndexComposition> composition;
     final List<ElementHandle<String, Double>> elements;
 
-    public IndexPricesElementUpdater(ElementHandle<String, IndexComposition> composition) {
-      this.composition = composition.subscribe(SubscriptionType.STRONG);
+    public IndexPricesElementUpdater() {
       this.elements = new ArrayList<>();
     }
 
@@ -184,7 +182,9 @@ public class IndexCalculatorExample {
 
     @Override
     public <K2, S2> boolean onNewElement(ElementHandle<K2, S2> handle) {
-      throw new UnsupportedOperationException("This should not happen");
+      // We get notified when the composition gets created
+      this.composition = COMPOSITIONS.castHandle(handle).subscribe(SubscriptionType.STRONG);
+      return true;
     }
   }
 }
