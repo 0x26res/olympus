@@ -1,5 +1,13 @@
 ### Olympus
 
+<p align="center">
+    <a href="https://github.com/arthurandres/olympusgraphs/contributors" alt="Contributors">
+        <img src="https://img.shields.io/github/contributors/arthurandres/olympus.svg" /></a>
+    <a href="https://circleci.com/gh/arthurandres/olympus/tree/master">
+        <img src="https://img.shields.io/github/languages/top/arthurandres/olympus.svg" alt="build status"></a>
+</p>
+    
+
 # TL;DR
 
 Olympus is a real time event processing engine, with a twist:
