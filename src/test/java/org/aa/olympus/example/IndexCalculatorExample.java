@@ -3,7 +3,6 @@ package org.aa.olympus.example;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +26,22 @@ import org.junit.Test;
 
 // TODO: add test for price being removed (set to null)
 // TODO: use the lifecycle support (not ready)
-// TODO: add test to make sure it unsubscribes when composition change
+
+/**
+ * This example calculates index prices using 2 inputs:
+ * <ul>
+ * <li>Stock prices: for example GOOGLE is worth $135, IBM $230</li>
+ * <li>Index composition (the weight of each index. For example the TECH index is made of 2 part
+ * GOOGLE and 3 part IBM
+ *
+ * </li>
+ * </ul>
+ * In this example the price of the TECH index is worth 960 (135*2 + 230*3). But we want to make
+ * sure that the index price updates every time the price of it's constituents (GOOGLE, IBM) update.
+ * Also we want to make sure that the index price updates when its composition changes. And last but
+ * not least, if constituent are added/removed from the index, the index price should
+ * subscribe/unsubsccribe to constituent accordingly.
+ */
 public class IndexCalculatorExample {
 
   public static final EntityKey<String, IndexComposition> COMPOSITIONS =
@@ -36,7 +50,69 @@ public class IndexCalculatorExample {
       Olympus.key("STOCK_PRICES", String.class, Double.class);
   public static final EntityKey<String, Double> INDEX_PRICES =
       Olympus.key("INDEX_PRICES", String.class, Double.class);
+
   private Engine engine;
+
+  @Test
+  public void testTechIndex() {
+
+    engine.setSourceState(STOCK_PRICES, "GOOGLE", 130.0);
+    engine.setSourceState(STOCK_PRICES, "IBM", 230.0);
+
+    engine.setSourceState(COMPOSITIONS, "TECH", new IndexComposition(
+        ImmutableMap.of("GOOGLE", 2.0, "IBM", 3.0)));
+    engine.runOnce();
+    Assert.assertEquals(130.0 * 2.0 + 230.0 * 3.0, engine.getState(INDEX_PRICES, "TECH"), 0.0);
+
+    engine.setSourceState(STOCK_PRICES, "GOOGLE", 135.0);
+    engine.setSourceState(STOCK_PRICES, "IBM", 230.0);
+    engine.runOnce();
+    Assert.assertEquals(135.0 * 2.0 + 230.0 * 3.0, engine.getState(INDEX_PRICES, "TECH"), 0.0);
+  }
+
+  @Test
+  public void testCompositionUpdates() {
+
+    engine.setSourceState(STOCK_PRICES, "A", 1.0);
+    engine.setSourceState(STOCK_PRICES, "G", 2.0);
+    engine.setSourceState(STOCK_PRICES, "IBM", 3.0);
+
+    engine.setSourceState(COMPOSITIONS, "TECH", new IndexComposition(ImmutableMap.of("IBM", 1.0)));
+    engine.runOnce();
+    System.out.println(engine.toString());
+    Assert.assertEquals(3.0, engine.getState(INDEX_PRICES, "TECH"), 0.0);
+
+    engine.setSourceState(
+        COMPOSITIONS, "TECH", new IndexComposition(ImmutableMap.of("IBM", 0.5, "G", 0.5)));
+    engine.runOnce();
+    System.out.println(engine.toString());
+    Assert.assertEquals(2.0 * 0.5 + 3.0 * 0.5, engine.getState(INDEX_PRICES, "TECH"), 0.0);
+
+    engine.setSourceState(
+        COMPOSITIONS, "TECH", new IndexComposition(ImmutableMap.of("IBM", 0.5, "G", 1.0)));
+    engine.runOnce();
+    System.out.println(engine.toString());
+    Assert.assertEquals(2.0 * 1.0 + 3.0 * 0.5, engine.getState(INDEX_PRICES, "TECH"), 0.0);
+  }
+
+  @Test
+  public void testPriceUpdate() {
+
+    engine.setSourceState(STOCK_PRICES, "A", 2.0);
+    engine.setSourceState(
+        COMPOSITIONS, "NOT_READY", new IndexComposition(ImmutableMap.of("A", 1.0, "B", 1.0)));
+
+    engine.runOnce();
+    Assert.assertTrue(Double.isNaN(engine.getState(INDEX_PRICES, "NOT_READY")));
+
+    engine.setSourceState(STOCK_PRICES, "B", 4.0);
+    engine.runOnce();
+    Assert.assertEquals(6.0, engine.getState(INDEX_PRICES, "NOT_READY"), 0.0);
+
+    engine.setSourceState(STOCK_PRICES, "B", 3.0);
+    engine.runOnce();
+    Assert.assertEquals(5.0, engine.getState(INDEX_PRICES, "NOT_READY"), 0.0);
+  }
 
   @Before
   public void setUp() {
@@ -50,50 +126,6 @@ public class IndexCalculatorExample {
   }
 
   @Test
-  public void testCompositionUpdates() {
-
-    engine.setSourceState(STOCK_PRICES, "A", 1.0);
-    engine.setSourceState(STOCK_PRICES, "G", 2.0);
-    engine.setSourceState(STOCK_PRICES, "IBM", 3.0);
-
-    engine.setSourceState(COMPOSITIONS, "TECH", new IndexComposition(ImmutableMap.of("IBM", 1.0)));
-    engine.runOnce(LocalDateTime.now());
-    System.out.println(engine.toString());
-    Assert.assertEquals(3.0, engine.getState(INDEX_PRICES, "TECH"), 0.0);
-
-    engine.setSourceState(
-        COMPOSITIONS, "TECH", new IndexComposition(ImmutableMap.of("IBM", 0.5, "G", 0.5)));
-    engine.runOnce(LocalDateTime.now());
-    System.out.println(engine.toString());
-    Assert.assertEquals(2.0 * 0.5 + 3.0 * 0.5, engine.getState(INDEX_PRICES, "TECH"), 0.0);
-
-    engine.setSourceState(
-        COMPOSITIONS, "TECH", new IndexComposition(ImmutableMap.of("IBM", 0.5, "G", 1.0)));
-    engine.runOnce(LocalDateTime.now());
-    System.out.println(engine.toString());
-    Assert.assertEquals(2.0 * 1.0 + 3.0 * 0.5, engine.getState(INDEX_PRICES, "TECH"), 0.0);
-  }
-
-  @Test
-  public void testPriceUpdate() {
-
-    engine.setSourceState(STOCK_PRICES, "A", 2.0);
-    engine.setSourceState(
-        COMPOSITIONS, "NOT_READY", new IndexComposition(ImmutableMap.of("A", 1.0, "B", 1.0)));
-
-    engine.runOnce(LocalDateTime.now());
-    Assert.assertTrue(Double.isNaN(engine.getState(INDEX_PRICES, "NOT_READY")));
-
-    engine.setSourceState(STOCK_PRICES, "B", 4.0);
-    engine.runOnce(LocalDateTime.now());
-    Assert.assertEquals(6.0, engine.getState(INDEX_PRICES, "NOT_READY"), 0.0);
-
-    engine.setSourceState(STOCK_PRICES, "B", 3.0);
-    engine.runOnce(LocalDateTime.now());
-    Assert.assertEquals(5.0, engine.getState(INDEX_PRICES, "NOT_READY"), 0.0);
-  }
-
-  @Test
   public void testWithElementView() {
 
     engine.setSourceState(STOCK_PRICES, "A", 2.0);
@@ -101,15 +133,36 @@ public class IndexCalculatorExample {
     engine.setSourceState(
         COMPOSITIONS, "A+B", new IndexComposition(ImmutableMap.of("A", 1.0, "B", 1.0)));
 
-    engine.runOnce(LocalDateTime.now());
+    engine.runOnce();
     assertElement(engine.getElement(INDEX_PRICES, "A+B"), ElementStatus.UPDATED, 6.0, 1);
 
     engine.setSourceState(STOCK_PRICES, "B", 5.0);
-    engine.runOnce(LocalDateTime.now());
+    engine.runOnce();
     assertElement(engine.getElement(INDEX_PRICES, "A+B"), ElementStatus.UPDATED, 7.0, 2);
 
-    engine.runOnce(LocalDateTime.now());
+    engine.runOnce();
     assertElement(engine.getElement(INDEX_PRICES, "A+B"), ElementStatus.UPDATED, 7.0, 2);
+  }
+
+  @Test
+  public void testUnsubscribe() {
+
+    engine.setSourceState(STOCK_PRICES, "A", 2.0);
+    engine.setSourceState(STOCK_PRICES, "B", 4.0);
+    engine.setSourceState(
+        COMPOSITIONS, "A+B", new IndexComposition(ImmutableMap.of("A", 1.0, "B", 1.0)));
+
+    engine.runOnce();
+    assertElement(engine.getElement(INDEX_PRICES, "A+B"), ElementStatus.UPDATED, 6.0, 1);
+
+    engine.setSourceState(
+        COMPOSITIONS, "A+B", new IndexComposition(ImmutableMap.of("A", 1.0)));
+    engine.runOnce();
+    assertElement(engine.getElement(INDEX_PRICES, "A+B"), ElementStatus.UPDATED, 2.0, 2);
+
+    engine.runOnce();
+    engine.setSourceState(STOCK_PRICES, "B", 3.0);
+    assertElement(engine.getElement(INDEX_PRICES, "A+B"), ElementStatus.UPDATED, 2.0, 2);
   }
 
   <K, S> void assertElement(
@@ -120,7 +173,11 @@ public class IndexCalculatorExample {
     Assert.assertEquals(expectedUpdateId, view.getUpdateContext().getUpdateId());
   }
 
+  /**
+   * Weights of index constituent
+   */
   public static class IndexComposition {
+
     public final Map<String, Double> weights;
 
     public IndexComposition(Map<String, Double> weights) {
@@ -133,6 +190,9 @@ public class IndexCalculatorExample {
     }
   }
 
+  /**
+   * Creates a new {@link IndexPricesElementUpdater} when a new {@link IndexComposition} is created
+   */
   public static class IndexPricesEntityManager implements ElementManager<String, Double> {
 
     @Override
@@ -149,10 +209,13 @@ public class IndexCalculatorExample {
     }
   }
 
+  /**
+   * Updates index prices when an update comes in
+   */
   public static class IndexPricesElementUpdater implements ElementUpdater<Double> {
 
-    ElementHandle<String, IndexComposition> composition;
     final List<ElementHandle<String, Double>> elements;
+    ElementHandle<String, IndexComposition> composition;
 
     public IndexPricesElementUpdater() {
       this.elements = new ArrayList<>();
@@ -187,4 +250,5 @@ public class IndexCalculatorExample {
       return true;
     }
   }
+
 }

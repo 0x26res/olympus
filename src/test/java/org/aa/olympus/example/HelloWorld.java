@@ -1,9 +1,11 @@
 package org.aa.olympus.example;
 
+import com.google.common.collect.ImmutableSet;
 import java.util.function.Consumer;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementUpdater;
+import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.Toolbox;
@@ -60,5 +62,27 @@ public class HelloWorld {
     public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<String> toNotify) {
       toNotify.accept((String) key);
     }
+  }
+
+  public static Engine createEngine() {
+    return Olympus.builder()
+        .registerSource(HelloWorld.LEFT)
+        .registerSource(HelloWorld.RIGHT)
+        .registerEntity(
+            HelloWorld.BOTH,
+            new ConcatenatorElementManager(),
+            ImmutableSet.of(HelloWorld.LEFT, HelloWorld.RIGHT))
+        .build();
+  }
+
+  public static Engine createEngineUsingSimpleAPI() {
+    return Olympus.builder()
+        .registerSource(HelloWorld.LEFT)
+        .registerSource(HelloWorld.RIGHT)
+        .registerSimpleEntity(
+            HelloWorld.BOTH,
+            p -> new Concatenator(),
+            ImmutableSet.of(HelloWorld.LEFT, HelloWorld.RIGHT))
+        .build();
   }
 }

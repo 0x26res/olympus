@@ -49,15 +49,14 @@ Upon update they can read the state of the elements they are subscribed to and p
 
 In Object Oriented terms, an `element` would be the Object and an `entity` the Class. 
 Each `element` belongs to an `entity`. 
-Each `entity` defines how elements are created and how they subscribe to other `elements`.
+Each `entity` defines how elements are created and which element gets notified or created when new elements are added to the engine.
 It also has to declare which other entities they depend on. 
 
 ### Source
 
-A special `entity` whose `elements` can receive external event to modify their state.
+A special `entity` whose `elements` states are updated by external event.
 
 # TODO:
-- [ ] Dynamic subscription example
 - [ ] add a less restrictive cast to the key
 - [ ] Add end of life events
 - [ ] Entity manager could be entities themselves

@@ -26,6 +26,14 @@ public final class EntityKey<K, S> {
     return name;
   }
 
+  public TypeToken<K> getKeyType() {
+    return keyType;
+  }
+
+  public TypeToken<S> getStateType() {
+    return stateType;
+  }
+
   public ElementHandle<K, S> castHandle(ElementHandle elementHandle) {
     if (elementHandle.getEntityKey().equals(this)) {
       // This is safe as the type are the same

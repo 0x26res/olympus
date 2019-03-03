@@ -10,6 +10,9 @@ public final class UpdateResult<T> {
   private static final UpdateResult<?> NOT_READY = new UpdateResult<>(UpdateStatus.NOT_READY, null);
   private static final UpdateResult<?> NOTHING = new UpdateResult<>(UpdateStatus.NOTHING, null);
   private static final UpdateResult<?> MORE_WORK = new UpdateResult<>(UpdateStatus.MORE_WORK, null);
+  private static final UpdateResult<?> ERROR = new UpdateResult<>(UpdateStatus.ERROR, null);
+  private static final UpdateResult<?> UPSTREAM_ERROR = new UpdateResult<>(
+      UpdateStatus.UPSTREAM_ERROR, null);
 
   private final UpdateStatus status;
   private final T state;
@@ -38,6 +41,14 @@ public final class UpdateResult<T> {
 
   public static <T> UpdateResult<T> notReady() {
     return (UpdateResult<T>) NOT_READY;
+  }
+
+  public static <T> UpdateResult<T> error() {
+    return (UpdateResult<T>) ERROR;
+  }
+
+  public static <T> UpdateResult<T> upstreamError() {
+    return (UpdateResult<T>) UPSTREAM_ERROR;
   }
 
   private static <T> UpdateResult<T> unchanged() {

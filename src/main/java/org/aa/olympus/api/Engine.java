@@ -13,6 +13,11 @@ public interface Engine {
   /** Run the engine once, processing all updates */
   void runOnce(LocalDateTime time);
 
+  /**
+   * Calls {@link #runOnce()} with the current time
+   */
+  void runOnce();
+
   /** Gets the state of one entity */
   <K, S> S getState(EntityKey<K, S> entityKey, K key);
 

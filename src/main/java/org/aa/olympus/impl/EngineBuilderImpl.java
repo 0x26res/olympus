@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -11,6 +12,7 @@ import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EngineBuilder;
 import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.SimpleElementManager;
 
 public final class EngineBuilderImpl implements EngineBuilder {
 
@@ -29,6 +31,23 @@ public final class EngineBuilderImpl implements EngineBuilder {
     checkDependencies(key, dependencies);
     entities.put(key, new EntityUnit<>(key, manager, dependencies));
     return this;
+  }
+
+  @Override
+  public <K, S> EngineBuilder registerSimpleEntity(EntityKey<K, S> key,
+      SimpleElementManager<K, S> manager, Set<EntityKey<K, ?>> dependencies) {
+    for (EntityKey<K, ?> dependency : dependencies) {
+      Preconditions.checkArgument(
+          key.getKeyType().equals(dependency.getKeyType()),
+          "%s dependencies must have the same key type. %s vs %s",
+          SimpleElementManager.class.getSimpleName(),
+          key.getKeyType(),
+          dependency.getKeyType());
+    }
+    return registerEntity(
+        key,
+        new SimpleElementManagerAdapter<>(manager),
+        new HashSet<>(dependencies));
   }
 
   @Override

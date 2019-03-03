@@ -8,6 +8,7 @@ import org.aa.olympus.api.ElementStatus;
 import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.ElementView;
 import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.SubscriptionType;
 import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
@@ -16,8 +17,8 @@ import org.aa.olympus.api.UpdateStatus;
 final class ElementUnit<K, S> implements ElementView<K, S> {
   private final EntityKey<K, S> entityKey;
   private final K key;
-  private final Set<ElementUnit> broadcasters = new HashSet<>();
-  private final Set<ElementUnit> subscribers = new HashSet<>();
+  private final Set<ElementHandleAdapter> broadcasters = new HashSet<>();
+  private final Set<ElementHandleAdapter<K, S>> subscribers = new HashSet<>();
   private ElementUpdater<S> updater;
   private ElementStatus status;
   private S state;
@@ -83,13 +84,67 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
     ++notifications;
   }
 
-  public void update(UpdateContext updateContext, Toolbox toolbox) {
-    UpdateResult<S> result = this.updater.update(state, updateContext, toolbox);
+  public void update(UpdateContext newUpdateContext, Toolbox toolbox) {
+    UpdateResult<S> result = getUpdateResult(newUpdateContext, toolbox);
     if (handleUpdateResult(result)) {
-      subscribers.forEach(ElementUnit::stain);
+      subscribers.forEach(ElementHandleAdapter::stain);
     }
-    this.updateContext = updateContext;
+    this.updateContext = newUpdateContext;
     this.notifications = 0;
+  }
+
+  private UpdateResult<S> getUpdateResult(UpdateContext newUpdateContext, Toolbox toolbox) {
+    ElementStatus broadcastersStatus = getBroadcastersStatus();
+    switch (broadcastersStatus) {
+      case UPDATED:
+        try {
+          return this.updater.update(state, newUpdateContext, toolbox);
+        } catch (Exception e) {
+          // TODO: register a logger for error
+          e.printStackTrace();
+          return UpdateResult.error();
+        }
+      case ERROR:
+        return UpdateResult.upstreamError();
+      case NOT_READY:
+        return UpdateResult.notReady();
+      default:
+        throw new UnsupportedValueException(ElementStatus.class, broadcastersStatus);
+    }
+  }
+
+  private ElementStatus getBroadcastersStatus() {
+    int failed = 0;
+    int notReady = 0;
+
+    for (ElementHandleAdapter broadcaster : broadcasters) {
+      if (broadcaster.getSubscriptionType() == SubscriptionType.STRONG) {
+        switch (broadcaster.getStatus()) {
+          case ERROR:
+            ++failed;
+            break;
+          case UPDATED:
+            break;
+          case NOT_READY:
+          case CREATED:
+          case SHADOW:
+          case DELETED:
+            ++notReady;
+            break;
+          default:
+            throw new UnsupportedValueException(ElementStatus.class, broadcaster.getStatus());
+        }
+      }
+    }
+
+    if (failed != 0) {
+      return ElementStatus.ERROR;
+    } else if (notReady != 0) {
+      return ElementStatus.NOT_READY;
+    } else {
+      return ElementStatus.UPDATED;
+    }
+
   }
 
   <KB, SB> void onNewElement(ElementHandle<KB, SB> broadcaster) {
@@ -124,13 +179,19 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
     }
   }
 
-  void subscribe(ElementUnit broadcaster) {
-    this.broadcasters.add(broadcaster);
-    broadcaster.subscribers.add(this);
+  public boolean updateSubscriber(ElementHandleAdapter<K, S> handle, boolean add) {
+    if (add) {
+      return this.subscribers.add(handle);
+    } else {
+      return this.subscribers.remove(handle);
+    }
   }
 
-  void unsubscribe(ElementUnit broadcaster) {
-    this.broadcasters.remove(broadcaster);
-    broadcaster.subscribers.remove(this);
+  public boolean updateBroadcaster(ElementHandleAdapter handle, boolean add) {
+    if (add) {
+      return this.broadcasters.add(handle);
+    } else {
+      return this.broadcasters.remove(handle);
+    }
   }
 }

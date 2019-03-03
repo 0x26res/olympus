@@ -9,6 +9,16 @@ public enum UpdateStatus {
   DELETED,
   /** More work is needed, keep going */
   MORE_WORK,
-  /** Not ready to compute */
-  NOT_READY
+  /**
+   * Not ready to compute (some upstream elements are missing
+   */
+  NOT_READY,
+  /**
+   * An error as happened
+   */
+  ERROR,
+  /**
+   * An error as happened in a broadcaster
+   */
+  UPSTREAM_ERROR
 }

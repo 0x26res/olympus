@@ -17,8 +17,13 @@ public enum ElementStatus {
   /**
    * The element has failed during update
    */
-  // TODO: catch exceptions thrown by element
+  // TODO: add test
   ERROR,
+  /**
+   * The element could not update because of failed upstream element
+   */
+  // TODO: add test
+  UPSTREAM_ERROR,
   /** The element has decided it no longer needed to exist */
   // TODO: add support for it
   DELETED

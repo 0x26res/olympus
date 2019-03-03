@@ -56,14 +56,16 @@ final class ElementHandleAdapter<K, S> implements ElementHandle<K, S> {
 
   @Override
   public ElementHandle<K, S> subscribe(SubscriptionType subscriptionType) {
-
     if (subscriptionType != this.subscriptionType) {
       switch (subscriptionType) {
         case STRONG:
-          subscriber.subscribe(broadcaster);
+        case WEAK:
+          broadcaster.updateSubscriber(this, true);
+          subscriber.updateBroadcaster(this, true);
           break;
         case NONE:
-          subscriber.unsubscribe(broadcaster);
+          broadcaster.updateSubscriber(this, true);
+          subscriber.updateBroadcaster(this, true);
           break;
         default:
           throw new UnsupportedValueException(SubscriptionType.class, subscriptionType);
@@ -81,6 +83,10 @@ final class ElementHandleAdapter<K, S> implements ElementHandle<K, S> {
       default:
         return defaultState;
     }
+  }
+
+  public void stain() {
+    this.subscriber.stain();
   }
 
   @Override

@@ -18,15 +18,8 @@ public class EngineBuilderImplTest {
 
   @Test
   public void helloWorldTest() {
-    Engine engine =
-        Olympus.builder()
-            .registerSource(HelloWorld.LEFT)
-            .registerSource(HelloWorld.RIGHT)
-            .registerEntity(
-                HelloWorld.BOTH,
-                new ConcatenatorElementManager(),
-                ImmutableSet.of(HelloWorld.LEFT, HelloWorld.RIGHT))
-            .build();
+
+    Engine engine = HelloWorld.createEngineUsingSimpleAPI();
 
     engine.setSourceState(HelloWorld.LEFT, "UC", "LEFT");
     engine.setSourceState(HelloWorld.RIGHT, "UC", "RIGHT");

@@ -47,6 +47,11 @@ final class EngineImpl implements Engine {
     propagateUpdates();
   }
 
+  @Override
+  public void runOnce() {
+    runOnce(LocalDateTime.now());
+  }
+
   private void propagateUpdates() {
 
     for (EntityKey entityKey : sorted) {
