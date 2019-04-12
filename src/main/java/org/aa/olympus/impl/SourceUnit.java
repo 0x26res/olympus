@@ -17,8 +17,8 @@ final class SourceUnit<K, S> implements ElementUpdater<S> {
     this.elementUnit = elementUnit;
   }
 
-  void setState(S lastState) {
-    this.lastState = lastState;
+  void setState(S state) {
+    this.lastState = state;
     elementUnit.stain();
   }
 
@@ -32,7 +32,6 @@ final class SourceUnit<K, S> implements ElementUpdater<S> {
       // TODO: there's a potential memory leak here, unit should delete themselves from the map
       return UpdateResult.delete();
     } else {
-
       return UpdateResult.update(lastState);
     }
   }

@@ -9,7 +9,6 @@ public final class UpdateResult<T> {
   private static final UpdateResult<?> DELETED = new UpdateResult<>(UpdateStatus.DELETED, null);
   private static final UpdateResult<?> NOT_READY = new UpdateResult<>(UpdateStatus.NOT_READY, null);
   private static final UpdateResult<?> NOTHING = new UpdateResult<>(UpdateStatus.NOTHING, null);
-  private static final UpdateResult<?> MORE_WORK = new UpdateResult<>(UpdateStatus.MORE_WORK, null);
   private static final UpdateResult<?> ERROR = new UpdateResult<>(UpdateStatus.ERROR, null);
   private static final UpdateResult<?> UPSTREAM_ERROR = new UpdateResult<>(
       UpdateStatus.UPSTREAM_ERROR, null);
@@ -53,10 +52,6 @@ public final class UpdateResult<T> {
 
   private static <T> UpdateResult<T> unchanged() {
     return (UpdateResult<T>) NOTHING;
-  }
-
-  public static <T> UpdateResult<T> moreWork() {
-    return (UpdateResult<T>) MORE_WORK;
   }
 
   public UpdateStatus getStatus() {

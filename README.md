@@ -69,6 +69,8 @@ A special `entity` whose `elements` states are updated by external event.
 - [ ] One cycle for creation, one cycle for updates?
 - [ ] Add a special case for Result.<Double>update because of nan
 - [ ] Add a tutorial to this page
+- [ ] Add draw IO example
+- [ ] Stop providing previous in maybe
 - [ ] Add rules
   * Everything must go downstream
   * subscriber / broadcaster (not listener) 

@@ -7,8 +7,6 @@ public enum UpdateStatus {
   UPDATED,
   /** The element doesn't exist any more */
   DELETED,
-  /** More work is needed, keep going */
-  MORE_WORK,
   /**
    * Not ready to compute (some upstream elements are missing
    */

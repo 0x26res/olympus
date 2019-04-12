@@ -1,5 +1,6 @@
 package org.aa.olympus.impl;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import java.util.HashSet;
 import java.util.Set;
@@ -101,7 +102,7 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
           return this.updater.update(state, newUpdateContext, toolbox);
         } catch (Exception e) {
           // TODO: register a logger for error
-          e.printStackTrace();
+          System.err.println(String.format("%s failed: %s", this, e.getMessage()));
           return UpdateResult.error();
         }
       case ERROR:
@@ -144,7 +145,6 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
     } else {
       return ElementStatus.UPDATED;
     }
-
   }
 
   <KB, SB> void onNewElement(ElementHandle<KB, SB> broadcaster) {
@@ -174,9 +174,21 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
         Preconditions.checkState(state != null);
         Preconditions.checkState(this.status == ElementStatus.UPDATED);
         return false;
+      case ERROR:
+        this.state = null;
+        return changeStatus(ElementStatus.ERROR);
+      case UPSTREAM_ERROR:
+        this.state = null;
+        return changeStatus(ElementStatus.UPSTREAM_ERROR);
       default:
         throw new UnsupportedValueException(UpdateStatus.class, results.getStatus());
     }
+  }
+
+  private boolean changeStatus(ElementStatus elementStatus) {
+    boolean changed = this.status != elementStatus;
+    this.status = elementStatus;
+    return changed;
   }
 
   public boolean updateSubscriber(ElementHandleAdapter<K, S> handle, boolean add) {
@@ -193,5 +205,13 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
     } else {
       return this.broadcasters.remove(handle);
     }
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("entityKey", entityKey)
+        .add("key", key)
+        .toString();
   }
 }
