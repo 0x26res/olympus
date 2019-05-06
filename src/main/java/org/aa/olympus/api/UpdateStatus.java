@@ -3,6 +3,8 @@ package org.aa.olympus.api;
 public enum UpdateStatus {
   /** Nothing happened, this is a non event */
   NOTHING,
+  /** The state may have changed, if the value is different from the previous one */
+  MAYBE,
   /** The state changed */
   UPDATED,
   /** The element doesn't exist any more */

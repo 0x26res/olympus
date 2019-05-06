@@ -3,6 +3,7 @@ package org.aa.olympus.impl;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementStatus;
@@ -160,6 +161,11 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
         this.state = results.getState();
         this.status = ElementStatus.UPDATED;
         return true;
+      case MAYBE:
+        boolean changed = !Objects.equals(this.state, results.getState());
+        this.state = results.getState();
+        this.status = ElementStatus.UPDATED;
+        return changed;
       case DELETED:
         this.status = ElementStatus.DELETED;
         this.state = null;

@@ -26,12 +26,10 @@ public final class UpdateResult<T> {
     return new UpdateResult<>(UpdateStatus.UPDATED, state);
   }
 
-  public static <T> UpdateResult<T> maybe(T previousState, T newState) {
-    if (Objects.equals(previousState, newState)) {
-      return unchanged();
-    } else {
-      return update(newState);
-    }
+  public static <T> UpdateResult<T> maybe(T newState) {
+    Preconditions.checkNotNull(newState);
+    return new UpdateResult<>(UpdateStatus.MAYBE, newState);
+
   }
 
   public static <T> UpdateResult<T> delete() {

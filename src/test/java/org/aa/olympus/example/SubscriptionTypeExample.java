@@ -126,8 +126,7 @@ public class SubscriptionTypeExample {
     @Override
     public UpdateResult<String> update(
         String previous, UpdateContext updateContext, Toolbox toolbox) {
-      return UpdateResult.maybe(
-          previous, mandatory.getState() + '/' + optional.getStateOrDefault("no value"));
+      return UpdateResult.maybe(mandatory.getState() + '/' + optional.getStateOrDefault("no value"));
     }
 
     @Override
@@ -164,7 +163,7 @@ public class SubscriptionTypeExample {
       if (input.getState().equals("42")) {
         throw new IllegalArgumentException("42");
       } else {
-        return UpdateResult.maybe(previous, input.getState());
+        return UpdateResult.maybe(input.getState());
       }
     }
 

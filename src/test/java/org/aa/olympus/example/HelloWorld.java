@@ -31,7 +31,7 @@ public class HelloWorld {
     public UpdateResult<String> update(
         String previous, UpdateContext updateContext, Toolbox toolbox) {
       if (left != null && right != null) {
-        return UpdateResult.maybe(previous, left.getState() + ' ' + right.getState());
+        return UpdateResult.maybe(left.getState() + ' ' + right.getState());
       } else {
         return UpdateResult.notReady();
       }
