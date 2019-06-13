@@ -10,27 +10,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.logging.Logger;
 import org.aa.olympus.api.ElementView;
 import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
-import org.aa.olympus.api.UpdateContext;
 
+// TODO: consider adding an extra layer of abstraction to run the engine
 final class EngineImpl implements Engine {
 
+  private final EngineContext engineContext;
   private final List<EntityKey> sorted;
   private final Map<EntityKey, SourceManager> sources;
   private final Map<EntityKey, EntityManager> entities;
 
-  // TODO: consider adding an extra layer of abstraction to run the engine
-  private UpdateContext updateContext;
 
   EngineImpl(
+      EngineContext engineContext,
       List<EntityKey> sorted,
       final Map<EntityKey, SourceManager> sources,
       final Map<EntityKey, EntityManager> entities) {
+    this.engineContext = engineContext;
     this.sorted = sorted;
     this.sources = ImmutableMap.copyOf(sources);
     this.entities = ImmutableMap.copyOf(entities);
+
   }
 
   @Override
@@ -41,8 +44,12 @@ final class EngineImpl implements Engine {
 
   @Override
   public void runOnce(LocalDateTime time) {
-    updateContext =
-        new UpdateContextImpl(time, updateContext == null ? 1 : updateContext.getUpdateId() + 1);
+    Preconditions.checkArgument(
+        !time.isBefore(this.engineContext.getLatestContext().getTime()));
+    this.engineContext.setLatestContext(
+        new UpdateContextImpl(
+            time,
+            this.engineContext.getLatestContext().getUpdateId() + 1));
     propagateCreations();
     propagateUpdates();
   }
@@ -56,13 +63,10 @@ final class EngineImpl implements Engine {
 
     for (EntityKey entityKey : sorted) {
       EntityManager<?, ?> entityManager = entities.get(entityKey);
-      runEntity(entityManager);
+      entityManager.run();
     }
   }
 
-  private <K, S> void runEntity(EntityManager<K, S> entityManager) {
-    entityManager.run(updateContext);
-  }
 
   private void propagateCreations() {
     for (EntityKey entityKey : sorted) {

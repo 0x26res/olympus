@@ -5,6 +5,7 @@ import java.util.function.Consumer;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementUpdater;
+import org.aa.olympus.api.ElementView;
 import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.Olympus;
@@ -40,9 +41,20 @@ public class TestMaybe {
 
     engine.setSourceState(SOURCE, "foo", "FOO");
     engine.runOnce();
-    Assert.assertEquals("FOO", engine.getElement(ENTITY, "foo").getState());
-    // TODO: run again and check that the entity did not update but the source did
 
+    ElementView<String, String> element = engine.getElement(ENTITY, "foo");
+    Assert.assertEquals("FOO", element.getState());
+    Assert.assertEquals(1, element.getUpdateContext().getUpdateId());
+
+    engine.setSourceState(SOURCE, "foo", "FOO");
+    engine.runOnce();
+    Assert.assertEquals("FOO", element.getState());
+    Assert.assertEquals(1, element.getUpdateContext().getUpdateId());
+
+    engine.setSourceState(SOURCE, "foo", "FOO2");
+    engine.runOnce();
+    Assert.assertEquals("FOO2", element.getState());
+    Assert.assertEquals(3, element.getUpdateContext().getUpdateId());
   }
 
   private static class PassThroughUpdater implements ElementUpdater<String> {

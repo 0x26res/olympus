@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.logging.Level;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementStatus;
 import org.aa.olympus.api.ElementUpdater;
@@ -17,6 +18,8 @@ import org.aa.olympus.api.UpdateResult;
 import org.aa.olympus.api.UpdateStatus;
 
 final class ElementUnit<K, S> implements ElementView<K, S> {
+
+  private final EngineContext engineContext;
   private final EntityKey<K, S> entityKey;
   private final K key;
   private final Set<ElementHandleAdapter> broadcasters = new HashSet<>();
@@ -27,7 +30,8 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
   private int notifications;
   private UpdateContext updateContext = UpdateContextImpl.NONE;
 
-  ElementUnit(EntityKey<K, S> entityKey, K key) {
+  ElementUnit(EngineContext engineContext, EntityKey<K, S> entityKey, K key) {
+    this.engineContext = engineContext;
     this.entityKey = entityKey;
     this.key = key;
     this.updater = null;
@@ -86,24 +90,25 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
     ++notifications;
   }
 
-  public void update(UpdateContext newUpdateContext, Toolbox toolbox) {
-    UpdateResult<S> result = getUpdateResult(newUpdateContext, toolbox);
+  public void update(Toolbox toolbox) {
+    UpdateResult<S> result = getUpdateResult(toolbox);
     if (handleUpdateResult(result)) {
       subscribers.forEach(ElementHandleAdapter::stain);
+      this.updateContext = engineContext.getLatestContext();
     }
-    this.updateContext = newUpdateContext;
     this.notifications = 0;
   }
 
-  private UpdateResult<S> getUpdateResult(UpdateContext newUpdateContext, Toolbox toolbox) {
+  private UpdateResult<S> getUpdateResult(Toolbox toolbox) {
     ElementStatus broadcastersStatus = getBroadcastersStatus();
     switch (broadcastersStatus) {
       case UPDATED:
         try {
-          return this.updater.update(state, newUpdateContext, toolbox);
+          return this.updater.update(state, engineContext.getLatestContext(), toolbox);
         } catch (Exception e) {
-          // TODO: register a logger for error
-          System.err.println(String.format("%s failed: %s", this, e.getMessage()));
+          engineContext
+              .getErrorLogger()
+              .log(Level.SEVERE, String.format("%s failed: %s", this, e.getMessage()));
           return UpdateResult.error();
         }
       case ERROR:
@@ -172,7 +177,10 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
         return true;
       case NOT_READY:
         Preconditions.checkState(
-            this.status == ElementStatus.NOT_READY || this.status == ElementStatus.CREATED);
+            this.status == ElementStatus.NOT_READY || this.status == ElementStatus.CREATED,
+            "Can't go from %s to%s",
+            this.status,
+            ElementStatus.NOT_READY);
         Preconditions.checkState(state == null);
         this.status = ElementStatus.NOT_READY;
         return false;
@@ -215,9 +223,6 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("entityKey", entityKey)
-        .add("key", key)
-        .toString();
+    return MoreObjects.toStringHelper(this).add("entityKey", entityKey).add("key", key).toString();
   }
 }

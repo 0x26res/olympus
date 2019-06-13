@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.impl.EngineBuilderImpl.EntityUnit;
@@ -21,6 +22,7 @@ final class EngineAssembler {
 
   private final EngineBuilderImpl builder;
 
+  private EngineContext engineContext;
   private Map<EntityKey, Set<EntityKey>> entityToDependencies;
   private Map<EntityKey, Set<EntityKey>> entityToDependents;
   private List<EntityKey> topologicalSort;
@@ -45,13 +47,20 @@ final class EngineAssembler {
   }
 
   EngineImpl assemble() {
+    createContext();
     createDependencies();
     reverseDependencies();
     sort();
     prepareManagers();
     buildSources();
     buildEntities();
-    return new EngineImpl(topologicalSort, sources, entities);
+    return new EngineImpl(engineContext, topologicalSort, sources, entities);
+  }
+
+  private void createContext() {
+    engineContext = new EngineContext(Logger.getLogger(
+        EngineImpl.class.getName()
+        ));
   }
 
   private void createDependencies() {
@@ -101,6 +110,7 @@ final class EngineAssembler {
 
     EntityManager<K, S> entityManager =
         new EntityManager<>(
+            engineContext,
             sourceUnit.key,
             new ElementManagerAdapter<>(units),
             ImmutableMap.of(),
@@ -118,6 +128,7 @@ final class EngineAssembler {
         entities.put(
             entity.getEntityKey(),
             entity.createManager(
+                engineContext,
                 getDependenciesManagers((entity.getEntityKey())),
                 getDependents(entity.getEntityKey())));
       } else {

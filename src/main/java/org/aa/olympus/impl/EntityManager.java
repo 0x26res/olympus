@@ -17,6 +17,7 @@ import org.aa.olympus.api.UpdateContext;
 
 final class EntityManager<K, S> {
 
+  private final EngineContext engineContext;
   private final EntityKey<K, S> key;
   private final ElementManager<K, S> elementManager;
   private final Map<EntityKey, EntityManager> dependencies;
@@ -25,10 +26,12 @@ final class EntityManager<K, S> {
   private final Map<K, ElementUnit<K, S>> units = new HashMap<>();
 
   EntityManager(
+      EngineContext engineContext,
       EntityKey<K, S> key,
       ElementManager<K, S> elementManager,
       Map<EntityKey, EntityManager> dependencies,
       Set<EntityKey> dependents) {
+    this.engineContext = engineContext;
     this.key = key;
     this.elementManager = elementManager;
     this.dependencies = ImmutableMap.copyOf(dependencies);
@@ -50,13 +53,13 @@ final class EntityManager<K, S> {
   ElementUnit<K, S> get(K key, boolean create) {
     ElementUnit<K, S> unit = units.get(key);
     if (unit == null) {
-      unit = new ElementUnit<>(this.key, key);
+      unit = new ElementUnit<>(engineContext, this.key, key);
       units.put(key, unit);
     }
     if (unit.getStatus() == ElementStatus.SHADOW && create) {
-      UpdateContext updateContext = null; // TODO: find
       Toolbox toolbox = new ToolboxImpl(dependencies, unit);
-      ElementUpdater<S> updater = elementManager.create(key, updateContext, toolbox);
+      ElementUpdater<S> updater = elementManager
+          .create(key, engineContext.getLatestContext(), toolbox);
       Preconditions.checkNotNull(
           updater,
           "%s an not refuse to create a %s",
@@ -67,10 +70,10 @@ final class EntityManager<K, S> {
     return unit;
   }
 
-  void run(UpdateContext updateContext) {
+  void run() {
     for (ElementUnit<K, S> element : units.values()) {
       if (element.getNotifications() != 0) {
-        element.update(updateContext, new ToolboxImpl(dependencies, element));
+        element.update(new ToolboxImpl(dependencies, element));
       }
     }
   }
