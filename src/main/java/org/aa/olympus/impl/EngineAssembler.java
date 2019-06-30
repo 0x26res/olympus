@@ -58,17 +58,12 @@ final class EngineAssembler {
   }
 
   private void createContext() {
-    engineContext = new EngineContext(Logger.getLogger(
-        EngineImpl.class.getName()
-        ));
+    engineContext = new EngineContext(Logger.getLogger(EngineImpl.class.getName()));
   }
 
   private void createDependencies() {
     entityToDependencies =
-        builder
-            .entities
-            .values()
-            .stream()
+        builder.entities.values().stream()
             .collect(Collectors.toMap(EntityUnit::getEntityKey, EntityUnit::getDependencies));
     builder.sources.keySet().forEach(k -> entityToDependencies.put(k, Collections.emptySet()));
     entityToDependencies = makeImmutable(entityToDependencies);
@@ -148,8 +143,7 @@ final class EngineAssembler {
 
   private Map<EntityKey, EntityManager> getDependenciesManagers(EntityKey entityKey) {
 
-    return getDependencies(entityKey)
-        .stream()
+    return getDependencies(entityKey).stream()
         .map(p -> Preconditions.checkNotNull(entities.get(p), "Missing deps %s", p))
         .collect(Collectors.toMap(EntityManager::getKey, p -> p));
   }

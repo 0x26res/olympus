@@ -8,16 +8,13 @@ import org.aa.olympus.api.SimpleElementManager;
 import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
 
-/**
- * Wraps a {@link SimpleElementManager} into a {@link ElementManager}
- */
+/** Wraps a {@link SimpleElementManager} into a {@link ElementManager} */
 // TODO: Pass the not ready state / error state
 public final class SimpleElementManagerAdapter<K, S> implements ElementManager<K, S> {
 
   private final SimpleElementManager<K, S> simpleElementManager;
 
-  public SimpleElementManagerAdapter(
-      SimpleElementManager<K, S> simpleElementManager) {
+  public SimpleElementManagerAdapter(SimpleElementManager<K, S> simpleElementManager) {
     this.simpleElementManager = simpleElementManager;
   }
 

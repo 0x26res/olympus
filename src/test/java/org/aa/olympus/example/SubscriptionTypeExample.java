@@ -37,12 +37,13 @@ public class SubscriptionTypeExample {
     engine =
         Olympus.builder()
             .registerSource(MANDATORY_INPUT)
-            .registerEntity(
+            .registerInnerEntity(
                 MANDATORY, new FailOn42Manager(MANDATORY_INPUT), ImmutableSet.of(MANDATORY_INPUT))
             .registerSource(OPTIONAL_INPUT)
-            .registerEntity(
+            .registerInnerEntity(
                 OPTIONAL, new FailOn42Manager(OPTIONAL_INPUT), ImmutableSet.of(OPTIONAL_INPUT))
-            .registerEntity(RESULT, new MyElementManger(), ImmutableSet.of(MANDATORY, OPTIONAL))
+            .registerInnerEntity(
+                RESULT, new MyElementManger(), ImmutableSet.of(MANDATORY, OPTIONAL))
             .build();
   }
 
@@ -88,28 +89,28 @@ public class SubscriptionTypeExample {
     engine.setSourceState(MANDATORY_INPUT, "foo", "foo");
     engine.runOnce();
     Assert.assertEquals(ElementStatus.ERROR, engine.getElement(OPTIONAL, "foo").getStatus());
-    Assert.assertEquals(ElementStatus.UPDATED, engine.getElement(RESULT, "foo").getStatus());
+    Assert.assertEquals(ElementStatus.OK, engine.getElement(RESULT, "foo").getStatus());
     Assert.assertEquals("foo/no value", engine.getElement(RESULT, "foo").getState());
     // Mandatory present, Optional present
     engine.setSourceState(OPTIONAL_INPUT, "foo", "FOO");
     engine.runOnce();
-    Assert.assertEquals(ElementStatus.UPDATED, engine.getElement(OPTIONAL, "foo").getStatus());
-    Assert.assertEquals(ElementStatus.UPDATED, engine.getElement(MANDATORY, "foo").getStatus());
-    Assert.assertEquals(ElementStatus.UPDATED, engine.getElement(RESULT, "foo").getStatus());
+    Assert.assertEquals(ElementStatus.OK, engine.getElement(OPTIONAL, "foo").getStatus());
+    Assert.assertEquals(ElementStatus.OK, engine.getElement(MANDATORY, "foo").getStatus());
+    Assert.assertEquals(ElementStatus.OK, engine.getElement(RESULT, "foo").getStatus());
     Assert.assertEquals("foo/FOO", engine.getElement(RESULT, "foo").getState());
     // Mandatory fails, Optional present
     engine.setSourceState(MANDATORY_INPUT, "foo", "42");
     engine.runOnce();
-    Assert.assertEquals(ElementStatus.UPDATED, engine.getElement(OPTIONAL, "foo").getStatus());
+    Assert.assertEquals(ElementStatus.OK, engine.getElement(OPTIONAL, "foo").getStatus());
     Assert.assertEquals(ElementStatus.ERROR, engine.getElement(MANDATORY, "foo").getStatus());
     Assert.assertEquals(ElementStatus.UPSTREAM_ERROR, engine.getElement(RESULT, "foo").getStatus());
     Assert.assertNull(engine.getElement(RESULT, "foo").getState());
     // Both presents
     engine.setSourceState(MANDATORY_INPUT, "foo", "FOO");
     engine.runOnce();
-    Assert.assertEquals(ElementStatus.UPDATED, engine.getElement(OPTIONAL, "foo").getStatus());
-    Assert.assertEquals(ElementStatus.UPDATED, engine.getElement(MANDATORY, "foo").getStatus());
-    Assert.assertEquals(ElementStatus.UPDATED, engine.getElement(RESULT, "foo").getStatus());
+    Assert.assertEquals(ElementStatus.OK, engine.getElement(OPTIONAL, "foo").getStatus());
+    Assert.assertEquals(ElementStatus.OK, engine.getElement(MANDATORY, "foo").getStatus());
+    Assert.assertEquals(ElementStatus.OK, engine.getElement(RESULT, "foo").getStatus());
     Assert.assertEquals("FOO/FOO", engine.getElement(RESULT, "foo").getState());
   }
 
@@ -126,7 +127,8 @@ public class SubscriptionTypeExample {
     @Override
     public UpdateResult<String> update(
         String previous, UpdateContext updateContext, Toolbox toolbox) {
-      return UpdateResult.maybe(mandatory.getState() + '/' + optional.getStateOrDefault("no value"));
+      return UpdateResult.maybe(
+          mandatory.getState() + '/' + optional.getStateOrDefault("no value"));
     }
 
     @Override

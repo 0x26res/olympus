@@ -42,8 +42,8 @@ public class SparseMatrixSum {
     EngineBuilder builder = Olympus.builder();
     builder.registerSource(CELL);
 
-    builder.registerEntity(AGGREGATE, new AggregateManager(), ImmutableSet.of(CELL));
-    builder.registerEntity(TOTAL, new TotalManager(), ImmutableSet.of(AGGREGATE));
+    builder.registerInnerEntity(AGGREGATE, new AggregateManager(), ImmutableSet.of(CELL));
+    builder.registerInnerEntity(TOTAL, new TotalManager(), ImmutableSet.of(AGGREGATE));
 
     engine = builder.build();
   }

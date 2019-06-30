@@ -9,7 +9,6 @@ public final class EngineContext {
   private final Logger errorLogger;
   private UpdateContext latestContext;
 
-
   public EngineContext(Logger errorLogger) {
     this.errorLogger = errorLogger;
     this.latestContext = UpdateContextImpl.NONE;

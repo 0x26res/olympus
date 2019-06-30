@@ -13,18 +13,11 @@ public enum ElementStatus {
   /** The element is valid but doesn't have the required upstream data */
   NOT_READY,
   /** The element has successfully updated, returning a value */
-  UPDATED,
-  /**
-   * The element has failed during update
-   */
-  // TODO: add test
+  OK,
+  /** The element has failed during update */
   ERROR,
-  /**
-   * The element could not update because of failed upstream element
-   */
-  // TODO: add test
+  /** The element could not update because of failed upstream element */
   UPSTREAM_ERROR,
   /** The element has decided it no longer needed to exist */
-  // TODO: add support for it
   DELETED
 }

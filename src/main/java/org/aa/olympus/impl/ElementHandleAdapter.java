@@ -78,7 +78,7 @@ final class ElementHandleAdapter<K, S> implements ElementHandle<K, S> {
   @Override
   public S getStateOrDefault(S defaultState) {
     switch (getStatus()) {
-      case UPDATED:
+      case OK:
         return getState();
       default:
         return defaultState;

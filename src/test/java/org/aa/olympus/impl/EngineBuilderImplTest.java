@@ -53,7 +53,7 @@ public class EngineBuilderImplTest {
 
     Olympus.builder()
         .registerSource(HelloWorld.LEFT)
-        .registerEntity(
+        .registerInnerEntity(
             HelloWorld.BOTH,
             new ConcatenatorElementManager(),
             ImmutableSet.of(HelloWorld.LEFT, HelloWorld.RIGHT));
@@ -63,6 +63,6 @@ public class EngineBuilderImplTest {
   public void noDependenciesTest() {
     expectedException.expect(IllegalArgumentException.class);
     Olympus.builder()
-        .registerEntity(HelloWorld.BOTH, new ConcatenatorElementManager(), ImmutableSet.of());
+        .registerInnerEntity(HelloWorld.BOTH, new ConcatenatorElementManager(), ImmutableSet.of());
   }
 }

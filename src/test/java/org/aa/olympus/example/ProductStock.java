@@ -40,7 +40,7 @@ public class ProductStock {
 
     EngineBuilder engineBuilder = Olympus.builder();
     engineBuilder.registerSource(STOCK);
-    engineBuilder.registerEntity(AGGREGATE, new AggregateManager(), ImmutableSet.of(STOCK));
+    engineBuilder.registerInnerEntity(AGGREGATE, new AggregateManager(), ImmutableSet.of(STOCK));
 
     Engine engine = engineBuilder.build();
     engine.setSourceState(STOCK, POTATO, 1);

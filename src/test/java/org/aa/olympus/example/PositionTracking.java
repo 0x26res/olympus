@@ -18,6 +18,7 @@ import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class PositionTracking {
@@ -31,37 +32,43 @@ public class PositionTracking {
   private static final EntityKey<PositionKey, Integer> COMPANY =
       Olympus.key("COMPANY", PositionKey.class, Integer.class);
 
+  private Engine engine;
+
   private static PositionKey key(String product, String maturity, String account) {
     return new PositionKey(product, maturity, account);
+  }
+
+  @Before
+  public void setUp() {
+
+    EngineBuilder engineBuilder = Olympus.builder();
+
+    engineBuilder.registerSource(POSITION);
+    engineBuilder.registerInnerEntity(
+        PRODUCT_ACCOUNT,
+        new PositionManager(POSITION, p -> new PositionKey(p.product, null, p.account)),
+        ImmutableSet.of(POSITION));
+
+    engineBuilder.registerInnerEntity(
+        ACCOUNT,
+        new PositionManager(PRODUCT_ACCOUNT, p -> new PositionKey(null, null, p.account)),
+        ImmutableSet.of(PRODUCT_ACCOUNT));
+
+    engineBuilder.registerInnerEntity(
+        COMPANY,
+        new PositionManager(ACCOUNT, p -> new PositionKey(null, null, null)),
+        ImmutableSet.of(ACCOUNT));
+
+    engine = engineBuilder.build();
   }
 
   @Test
   public void demo() {
 
-    EngineBuilder engineBuilder = Olympus.builder();
-
-    engineBuilder.registerSource(POSITION);
-    engineBuilder.registerEntity(
-        PRODUCT_ACCOUNT,
-        new PositionManager(POSITION, p -> new PositionKey(p.product, null, p.account)),
-        ImmutableSet.of(POSITION));
-
-    engineBuilder.registerEntity(
-        ACCOUNT,
-        new PositionManager(PRODUCT_ACCOUNT, p -> new PositionKey(null, null, p.account)),
-        ImmutableSet.of(PRODUCT_ACCOUNT));
-
-    engineBuilder.registerEntity(
-        COMPANY,
-        new PositionManager(ACCOUNT, p -> new PositionKey(null, null, null)),
-        ImmutableSet.of(ACCOUNT));
-
-    Engine engine = engineBuilder.build();
-
     engine.setSourceState(POSITION, key("S&P500", "DEC18", "FOO"), 10);
-    engine.setSourceState(POSITION, key("S&P500", "MAR18", "FOO"), -10);
-    engine.setSourceState(POSITION, key("S&P500", "MAR18", "BAR"), 30);
-    engine.setSourceState(POSITION, key("DOW30", "MAR18", "BAR"), -20);
+    engine.setSourceState(POSITION, key("S&P500", "MAR19", "FOO"), -10);
+    engine.setSourceState(POSITION, key("S&P500", "MAR19", "BAR"), 30);
+    engine.setSourceState(POSITION, key("DOW30", "MAR19", "BAR"), -20);
 
     engine.runOnce(LocalDateTime.now());
 

@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.logging.Logger;
 import org.aa.olympus.api.ElementView;
 import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
@@ -23,7 +22,6 @@ final class EngineImpl implements Engine {
   private final Map<EntityKey, SourceManager> sources;
   private final Map<EntityKey, EntityManager> entities;
 
-
   EngineImpl(
       EngineContext engineContext,
       List<EntityKey> sorted,
@@ -33,7 +31,6 @@ final class EngineImpl implements Engine {
     this.sorted = sorted;
     this.sources = ImmutableMap.copyOf(sources);
     this.entities = ImmutableMap.copyOf(entities);
-
   }
 
   @Override
@@ -44,12 +41,9 @@ final class EngineImpl implements Engine {
 
   @Override
   public void runOnce(LocalDateTime time) {
-    Preconditions.checkArgument(
-        !time.isBefore(this.engineContext.getLatestContext().getTime()));
+    Preconditions.checkArgument(!time.isBefore(this.engineContext.getLatestContext().getTime()));
     this.engineContext.setLatestContext(
-        new UpdateContextImpl(
-            time,
-            this.engineContext.getLatestContext().getUpdateId() + 1));
+        new UpdateContextImpl(time, this.engineContext.getLatestContext().getUpdateId() + 1));
     propagateCreations();
     propagateUpdates();
   }
@@ -66,7 +60,6 @@ final class EngineImpl implements Engine {
       entityManager.run();
     }
   }
-
 
   private void propagateCreations() {
     for (EntityKey entityKey : sorted) {

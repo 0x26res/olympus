@@ -1,6 +1,6 @@
 package org.aa.olympus.api;
 
-/** For entities with only one element */
+/** Use as key for entities with only one element */
 public final class SingletonKey {
 
   private static final SingletonKey INSTANCE = new SingletonKey();

@@ -1,4 +1,4 @@
-package org.aa.olympus.example;
+package org.aa.olympus.impl;
 
 import com.google.common.collect.ImmutableSet;
 import java.util.function.Consumer;
@@ -15,7 +15,7 @@ import org.aa.olympus.api.SubscriptionType;
 import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
-import org.aa.olympus.impl.UpdateContextImpl;
+import org.aa.olympus.utils.OlympusAssert;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,7 +50,7 @@ public class TestAllState {
     engine =
         Olympus.builder()
             .registerSource(SOURCE)
-            .registerEntity(ENTITY, new MessagePasserManager(), ImmutableSet.of(SOURCE))
+            .registerInnerEntity(ENTITY, new MessagePasserManager(), ImmutableSet.of(SOURCE))
             .build();
     handle = engine.getElement(ENTITY, "foo");
   }
@@ -69,7 +69,7 @@ public class TestAllState {
     engine.runOnce();
     Assert.assertEquals(2, handle.getUpdateContext().getUpdateId());
     Assert.assertEquals("FOO", handle.getState());
-    Assert.assertEquals(ElementStatus.UPDATED, handle.getStatus());
+    Assert.assertEquals(ElementStatus.OK, handle.getStatus());
 
     engine.setSourceState(SOURCE, "foo", new Message(new RaiseSupplier()));
     engine.runOnce();
@@ -82,17 +82,60 @@ public class TestAllState {
   @Test
   public void testNotReady() {
 
-    engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.notReady()));
-    engine.runOnce();
-    Assert.assertEquals(ElementStatus.NOT_READY, handle.getStatus());
+    OlympusAssert.assertElement(handle, ElementStatus.SHADOW, null, 0);
 
     engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.notReady()));
     engine.runOnce();
-    Assert.assertEquals(ElementStatus.NOT_READY, handle.getStatus());
+    OlympusAssert.assertElement(handle, ElementStatus.NOT_READY, null, 1);
+
+    engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.notReady()));
+    engine.runOnce();
+    OlympusAssert.assertElement(handle, ElementStatus.NOT_READY, null, 1);
 
     engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.update("FOO")));
     engine.runOnce();
-    Assert.assertEquals(ElementStatus.UPDATED, handle.getStatus());
+    OlympusAssert.assertElement(handle, ElementStatus.OK, "FOO", 3);
+
+    engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.notReady()));
+    engine.runOnce();
+    OlympusAssert.assertElement(handle, ElementStatus.NOT_READY, null, 4);
+  }
+
+  @Test
+  public void testFirstCycleNothing() {
+    OlympusAssert.assertElement(handle, ElementStatus.SHADOW, null, 0);
+    engine.runOnce();
+    OlympusAssert.assertElement(handle, ElementStatus.SHADOW, null, 0);
+  }
+
+  @Test
+  public void testDelete() {
+    engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.notReady()));
+    engine.runOnce();
+    OlympusAssert.assertElement(handle, ElementStatus.NOT_READY, null, 1);
+
+    engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.delete()));
+    engine.runOnce();
+    OlympusAssert.assertElement(handle, ElementStatus.DELETED, null, 2);
+  }
+
+  @Test
+  public void testMaybe() {
+    engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.maybe("FOO")));
+    engine.runOnce();
+    OlympusAssert.assertElement(handle, ElementStatus.OK, "FOO", 1);
+
+    engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.maybe("FOO")));
+    engine.runOnce();
+    OlympusAssert.assertElement(handle, ElementStatus.OK, "FOO", 1);
+
+    engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.maybe("BAR")));
+    engine.runOnce();
+    OlympusAssert.assertElement(handle, ElementStatus.OK, "BAR", 3);
+
+    engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.maybe("FOO")));
+    engine.runOnce();
+    OlympusAssert.assertElement(handle, ElementStatus.OK, "FOO", 4);
   }
 
   static final class RaiseSupplier implements Supplier<UpdateResult<String>> {
@@ -106,10 +149,6 @@ public class TestAllState {
   static final class MessagePasserUpdater implements ElementUpdater<String> {
 
     ElementHandle<String, Message> source;
-
-    MessagePasserUpdater() {
-      this.source = source;
-    }
 
     @Override
     public UpdateResult<String> update(

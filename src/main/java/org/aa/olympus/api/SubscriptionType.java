@@ -1,12 +1,13 @@
 package org.aa.olympus.api;
 
+/** Represent the type of a subscription between two entity elements */
 public enum SubscriptionType {
 
   /** Notify on all updates, propagate failure state */
   STRONG(true, true),
-  /** Does not notify updates, does not propagate failure */
+  /** Does not notify on updates, does not propagate failure */
   WEAK(false, false),
-  /** Unsubscribe */
+  /** Not subscribed at all (can be used to unsubscribe) */
   NONE(false, false);
 
   public final boolean propagateUpdates;

@@ -15,7 +15,7 @@ import org.aa.olympus.api.SubscriptionType;
 import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
-import org.aa.olympus.api.UpdateStatus;
+import org.aa.olympus.api.UpdateResult.UpdateStatus;
 
 final class ElementUnit<K, S> implements ElementView<K, S> {
 
@@ -67,7 +67,7 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
 
   @Override
   public S getStateOrDefault(S defaultState) {
-    if (status == ElementStatus.UPDATED) {
+    if (status == ElementStatus.OK) {
       return state;
     } else {
       return defaultState;
@@ -102,7 +102,7 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
   private UpdateResult<S> getUpdateResult(Toolbox toolbox) {
     ElementStatus broadcastersStatus = getBroadcastersStatus();
     switch (broadcastersStatus) {
-      case UPDATED:
+      case OK:
         try {
           return this.updater.update(state, engineContext.getLatestContext(), toolbox);
         } catch (Exception e) {
@@ -130,7 +130,7 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
           case ERROR:
             ++failed;
             break;
-          case UPDATED:
+          case OK:
             break;
           case NOT_READY:
           case CREATED:
@@ -149,7 +149,7 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
     } else if (notReady != 0) {
       return ElementStatus.NOT_READY;
     } else {
-      return ElementStatus.UPDATED;
+      return ElementStatus.OK;
     }
   }
 
@@ -164,29 +164,22 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
     switch (results.getStatus()) {
       case UPDATED:
         this.state = results.getState();
-        this.status = ElementStatus.UPDATED;
+        this.status = ElementStatus.OK;
         return true;
       case MAYBE:
         boolean changed = !Objects.equals(this.state, results.getState());
         this.state = results.getState();
-        this.status = ElementStatus.UPDATED;
+        this.status = ElementStatus.OK;
         return changed;
       case DELETED:
-        this.status = ElementStatus.DELETED;
         this.state = null;
-        return true;
+        return changeStatus(ElementStatus.DELETED);
       case NOT_READY:
-        Preconditions.checkState(
-            this.status == ElementStatus.NOT_READY || this.status == ElementStatus.CREATED,
-            "Can't go from %s to%s",
-            this.status,
-            ElementStatus.NOT_READY);
-        Preconditions.checkState(state == null);
-        this.status = ElementStatus.NOT_READY;
-        return false;
+        this.state = null;
+        return changeStatus(ElementStatus.NOT_READY);
       case NOTHING:
         Preconditions.checkState(state != null);
-        Preconditions.checkState(this.status == ElementStatus.UPDATED);
+        Preconditions.checkState(this.status == ElementStatus.OK);
         return false;
       case ERROR:
         this.state = null;

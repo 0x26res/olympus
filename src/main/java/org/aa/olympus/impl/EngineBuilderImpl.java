@@ -24,7 +24,7 @@ public final class EngineBuilderImpl implements EngineBuilder {
   }
 
   @Override
-  public <K, S> EngineBuilderImpl registerEntity(
+  public <K, S> EngineBuilderImpl registerInnerEntity(
       EntityKey<K, S> key, ElementManager<K, S> manager, Set<EntityKey> dependencies) {
     Preconditions.checkArgument(!dependencies.isEmpty(), "Entities must have dependencies");
     checkKey(key);
@@ -34,8 +34,8 @@ public final class EngineBuilderImpl implements EngineBuilder {
   }
 
   @Override
-  public <K, S> EngineBuilder registerSimpleEntity(EntityKey<K, S> key,
-      SimpleElementManager<K, S> manager, Set<EntityKey<K, ?>> dependencies) {
+  public <K, S> EngineBuilder registerSimpleEntity(
+      EntityKey<K, S> key, SimpleElementManager<K, S> manager, Set<EntityKey<K, ?>> dependencies) {
     for (EntityKey<K, ?> dependency : dependencies) {
       Preconditions.checkArgument(
           key.getKeyType().equals(dependency.getKeyType()),
@@ -44,10 +44,8 @@ public final class EngineBuilderImpl implements EngineBuilder {
           key.getKeyType(),
           dependency.getKeyType());
     }
-    return registerEntity(
-        key,
-        new SimpleElementManagerAdapter<>(manager),
-        new HashSet<>(dependencies));
+    return registerInnerEntity(
+        key, new SimpleElementManagerAdapter<>(manager), new HashSet<>(dependencies));
   }
 
   @Override
@@ -110,11 +108,11 @@ public final class EngineBuilderImpl implements EngineBuilder {
 
     EntityManager<K, S> createManager(
         EngineContext engineContext,
-        Map<EntityKey, EntityManager> dependencies, Set<EntityKey> dependents) {
+        Map<EntityKey, EntityManager> dependencies,
+        Set<EntityKey> dependents) {
       Preconditions.checkArgument(dependencies.keySet().equals(this.dependencies));
       return new EntityManager<>(
-          engineContext,
-          entityKey, elementManager, dependencies, dependents);
+          engineContext, entityKey, elementManager, dependencies, dependents);
     }
 
     public EntityKey<K, S> getEntityKey() {

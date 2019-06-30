@@ -15,12 +15,9 @@ import org.aa.olympus.impl.UnsupportedEntityException;
 
 public class HelloWorld {
 
-  public static EntityKey<String, String> RIGHT =
-      Olympus.key("RIGHT", String.class, String.class);
-  public static EntityKey<String, String> LEFT =
-      Olympus.key("LEFT", String.class, String.class);
-  public static EntityKey<String, String> BOTH =
-      Olympus.key("BOTH", String.class, String.class);
+  public static EntityKey<String, String> RIGHT = Olympus.key("RIGHT", String.class, String.class);
+  public static EntityKey<String, String> LEFT = Olympus.key("LEFT", String.class, String.class);
+  public static EntityKey<String, String> BOTH = Olympus.key("BOTH", String.class, String.class);
 
   public static class Concatenator implements ElementUpdater<String> {
 
@@ -68,7 +65,7 @@ public class HelloWorld {
     return Olympus.builder()
         .registerSource(HelloWorld.LEFT)
         .registerSource(HelloWorld.RIGHT)
-        .registerEntity(
+        .registerInnerEntity(
             HelloWorld.BOTH,
             new ConcatenatorElementManager(),
             ImmutableSet.of(HelloWorld.LEFT, HelloWorld.RIGHT))

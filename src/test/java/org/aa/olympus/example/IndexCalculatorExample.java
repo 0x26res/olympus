@@ -11,7 +11,6 @@ import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementStatus;
 import org.aa.olympus.api.ElementUpdater;
-import org.aa.olympus.api.ElementView;
 import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EngineBuilder;
 import org.aa.olympus.api.EntityKey;
@@ -20,6 +19,7 @@ import org.aa.olympus.api.SubscriptionType;
 import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
+import org.aa.olympus.utils.OlympusAssert;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,13 +29,13 @@ import org.junit.Test;
 
 /**
  * This example calculates index prices using 2 inputs:
- * <ul>
- * <li>Stock prices: for example GOOGLE is worth $135, IBM $230</li>
- * <li>Index composition (the weight of each index. For example the TECH index is made of 2 part
- * GOOGLE and 3 part IBM
  *
- * </li>
+ * <ul>
+ *   <li>Stock prices: for example GOOGLE is worth $135, IBM $230
+ *   <li>Index composition (the weight of each index. For example the TECH index is made of 2 part
+ *       GOOGLE and 3 part IBM
  * </ul>
+ *
  * In this example the price of the TECH index is worth 960 (135*2 + 230*3). But we want to make
  * sure that the index price updates every time the price of it's constituents (GOOGLE, IBM) update.
  * Also we want to make sure that the index price updates when its composition changes. And last but
@@ -59,8 +59,8 @@ public class IndexCalculatorExample {
     engine.setSourceState(STOCK_PRICES, "GOOGLE", 130.0);
     engine.setSourceState(STOCK_PRICES, "IBM", 230.0);
 
-    engine.setSourceState(COMPOSITIONS, "TECH", new IndexComposition(
-        ImmutableMap.of("GOOGLE", 2.0, "IBM", 3.0)));
+    engine.setSourceState(
+        COMPOSITIONS, "TECH", new IndexComposition(ImmutableMap.of("GOOGLE", 2.0, "IBM", 3.0)));
     engine.runOnce();
     Assert.assertEquals(130.0 * 2.0 + 230.0 * 3.0, engine.getState(INDEX_PRICES, "TECH"), 0.0);
 
@@ -119,7 +119,7 @@ public class IndexCalculatorExample {
     EngineBuilder engineBuilder = Olympus.builder();
     engineBuilder.registerSource(COMPOSITIONS);
     engineBuilder.registerSource(STOCK_PRICES);
-    engineBuilder.registerEntity(
+    engineBuilder.registerInnerEntity(
         INDEX_PRICES, new IndexPricesEntityManager(), ImmutableSet.of(STOCK_PRICES, COMPOSITIONS));
 
     engine = engineBuilder.build();
@@ -134,14 +134,14 @@ public class IndexCalculatorExample {
         COMPOSITIONS, "A+B", new IndexComposition(ImmutableMap.of("A", 1.0, "B", 1.0)));
 
     engine.runOnce();
-    assertElement(engine.getElement(INDEX_PRICES, "A+B"), ElementStatus.UPDATED, 6.0, 1);
+    OlympusAssert.assertElement(engine.getElement(INDEX_PRICES, "A+B"), ElementStatus.OK, 6.0, 1);
 
     engine.setSourceState(STOCK_PRICES, "B", 5.0);
     engine.runOnce();
-    assertElement(engine.getElement(INDEX_PRICES, "A+B"), ElementStatus.UPDATED, 7.0, 2);
+    OlympusAssert.assertElement(engine.getElement(INDEX_PRICES, "A+B"), ElementStatus.OK, 7.0, 2);
 
     engine.runOnce();
-    assertElement(engine.getElement(INDEX_PRICES, "A+B"), ElementStatus.UPDATED, 7.0, 2);
+    OlympusAssert.assertElement(engine.getElement(INDEX_PRICES, "A+B"), ElementStatus.OK, 7.0, 2);
   }
 
   @Test
@@ -153,29 +153,18 @@ public class IndexCalculatorExample {
         COMPOSITIONS, "A+B", new IndexComposition(ImmutableMap.of("A", 1.0, "B", 1.0)));
 
     engine.runOnce();
-    assertElement(engine.getElement(INDEX_PRICES, "A+B"), ElementStatus.UPDATED, 6.0, 1);
+    OlympusAssert.assertElement(engine.getElement(INDEX_PRICES, "A+B"), ElementStatus.OK, 6.0, 1);
 
-    engine.setSourceState(
-        COMPOSITIONS, "A+B", new IndexComposition(ImmutableMap.of("A", 1.0)));
+    engine.setSourceState(COMPOSITIONS, "A+B", new IndexComposition(ImmutableMap.of("A", 1.0)));
     engine.runOnce();
-    assertElement(engine.getElement(INDEX_PRICES, "A+B"), ElementStatus.UPDATED, 2.0, 2);
+    OlympusAssert.assertElement(engine.getElement(INDEX_PRICES, "A+B"), ElementStatus.OK, 2.0, 2);
 
     engine.runOnce();
     engine.setSourceState(STOCK_PRICES, "B", 3.0);
-    assertElement(engine.getElement(INDEX_PRICES, "A+B"), ElementStatus.UPDATED, 2.0, 2);
+    OlympusAssert.assertElement(engine.getElement(INDEX_PRICES, "A+B"), ElementStatus.OK, 2.0, 2);
   }
 
-  <K, S> void assertElement(
-      ElementView<K, S> view, ElementStatus expectedStatus, S expectedState, int expectedUpdateId) {
-
-    Assert.assertEquals(expectedStatus, view.getStatus());
-    Assert.assertEquals(expectedState, view.getState());
-    Assert.assertEquals(expectedUpdateId, view.getUpdateContext().getUpdateId());
-  }
-
-  /**
-   * Weights of index constituent
-   */
+  /** Weights of index constituent */
   public static class IndexComposition {
 
     public final Map<String, Double> weights;
@@ -209,9 +198,7 @@ public class IndexCalculatorExample {
     }
   }
 
-  /**
-   * Updates index prices when an update comes in
-   */
+  /** Updates index prices when an update comes in */
   public static class IndexPricesElementUpdater implements ElementUpdater<Double> {
 
     final List<ElementHandle<String, Double>> elements;
@@ -250,5 +237,4 @@ public class IndexCalculatorExample {
       return true;
     }
   }
-
 }

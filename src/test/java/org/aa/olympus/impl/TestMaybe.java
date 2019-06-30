@@ -1,4 +1,4 @@
-package org.aa.olympus.example;
+package org.aa.olympus.impl;
 
 import com.google.common.collect.ImmutableSet;
 import java.util.function.Consumer;
@@ -32,7 +32,7 @@ public class TestMaybe {
     engine =
         Olympus.builder()
             .registerSource(SOURCE)
-            .registerEntity(ENTITY, new PassThroughManager(), ImmutableSet.of(SOURCE))
+            .registerInnerEntity(ENTITY, new PassThroughManager(), ImmutableSet.of(SOURCE))
             .build();
   }
 
