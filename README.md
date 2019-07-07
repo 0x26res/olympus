@@ -12,8 +12,8 @@
 
 Olympus is a real time event processing engine, with a twist:
 * Emphasis on stateful elements
-* Efficient event compression algorithm
 * Fine granularity of dependencies
+* Efficient event compression algorithm
 * One callback to rule them all
 * More declarative code, less imperative bug
 
@@ -56,21 +56,24 @@ It also has to declare which other entities they depend on.
 
 A special `entity` whose `elements` states are updated by external event.
 
-# TODO:
-- [ ] add a less restrictive cast to the key
-- [ ] Add end of life events
-- [ ] Entity manager could be entities themselves
-- [ ] Implement the UpdateContext, ToolBox, CreationContext...
-- [ ] Add tracking information (created at, update at...)
-- [ ] State machine for elements, add failure, how to propagate
-- [ ] Fault tolerance
-- [ ] Add examples and FAQ to doc
-- [ ] Add Meta entities: store the new & deleted elements
-- [ ] One cycle for creation, one cycle for updates?
-- [ ] Add a special case for Result.<Double>update because of nan
-- [ ] Add a tutorial to this page
-- [ ] Add draw IO example
-- [ ] Stop providing previous in maybe
-- [ ] Add rules
-  * Everything must go downstream
-  * subscriber / broadcaster (not listener) 
+
+# Example
+
+![Stok Index Diagram](/images/stock_index.png)
+
+In this example we receive stock prices and index composition in real time. 
+As stock prices and index compositions change, we update the indices values.
+
+The S&P500 valuation calculator subscribes to:
+* prices of the stocks in its composition. S&P500 subscribes  to Ford, Google etc. 
+* its composition.  
+
+When a price update, it gets notified and recalculate the index value accordingly.
+When its composition updates, it can subscribe/unsubscribe to the relevant prices. Subscriptions can be updated dynamically are run time.
+
+Some key advantages of the olympus engine is that:
+* Emphasis on stateful elements: index calculator rely on the state of each price, rather than receiving price change events when a price change.
+* Fine granularity of dependencies: elements only subscribe to what they are interested in. If a price that's not in the index updates, the index calculator won't be notified.
+* Efficient event compression algorithm: if several prices update at the same time, relevant indices only get notified once
+* One callback to rule them all: if a price updates or a composition updates, the same callback get called.
+* More declarative code, less imperative bug: Entities keys and values are declared once, and their state is managed by the engine. There's no need to store the state of every prices in each index calculator.  
