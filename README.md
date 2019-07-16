@@ -17,7 +17,7 @@ Olympus is a real time event processing engine, with a twist:
 * One callback to rule them all
 * More declarative code, less imperative bug
 
-It is inspired by some design patten seen in video game, such as the [game loop](http://gameprogrammingpatterns.com/game-loop.html) and the [update method](http://gameprogrammingpatterns.com/update-method.html).
+It is inspired by some design pattern seen in video game, such as the [game loop](http://gameprogrammingpatterns.com/game-loop.html) and the [update method](http://gameprogrammingpatterns.com/update-method.html).
 
 # Overview
 
@@ -29,7 +29,7 @@ Instead of receiving events from other elements, they can read the state of othe
 
 Updates are processed in micro-batches instead of one by one. 
 Updates are propagated through the engine based on the topological order of elements.
-Only the elements that need to be updated are notified, and they are notified once and once only. 
+Only the elements that need to be updated are notified, and they are notified only once. 
 
 It works well for systems that don't have a lot of elements but receive a lot of updates on each individual elements. 
 It's also recommended when you have complicated dependencies between your different elements.
@@ -72,7 +72,7 @@ When a price update, it gets notified and recalculate the index value accordingl
 When its composition updates, it can subscribe/unsubscribe to the relevant prices. Subscriptions can be updated dynamically are run time.
 
 Some key advantages of the olympus engine is that:
-* Emphasis on stateful elements: index calculator rely on the state of each price, rather than receiving price change events when a price change.
+* Emphasis on stateful elements: index calculator rely on the state of each price, rather than receiving price change events when a price change. This mean they don't have to maintain a map with with the current value of each stock.
 * Fine granularity of dependencies: elements only subscribe to what they are interested in. If a price that's not in the index updates, the index calculator won't be notified.
 * Efficient event compression algorithm: if several prices update at the same time, relevant indices only get notified once
 * One callback to rule them all: if a price updates or a composition updates, the same callback get called.
