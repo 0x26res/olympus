@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Queues;
 import java.util.List;
 import java.util.Queue;
+import java.util.function.BiFunction;
 import org.aa.olympus.api.ElementView;
 import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
@@ -11,19 +12,22 @@ import org.aa.olympus.api.UpdateContext;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-public class BridgeSubscription<K, S> implements Subscription {
+public final class BridgeSubscription<K, S, V> implements Subscription {
 
   private final AkkaBridge akkaBridge;
   private final EntityKey<K, S> entityKey;
-  private final Queue<S> values;
+  private final BiFunction<K, S, V> assembler;
+  private final Queue<V> values;
 
   private boolean isFlushing = false;
-  private Subscriber<? super S> subscriber = null;
+  private Subscriber<? super V> subscriber = null;
   private long demand = 0;
 
-  public BridgeSubscription(AkkaBridge akkaBridge, EntityKey<K, S> entityKey) {
+  BridgeSubscription(
+      AkkaBridge akkaBridge, EntityKey<K, S> entityKey, BiFunction<K, S, V> assembler) {
     this.akkaBridge = akkaBridge;
     this.entityKey = entityKey;
+    this.assembler = assembler;
     this.values = Queues.newConcurrentLinkedQueue();
   }
 
@@ -41,7 +45,7 @@ public class BridgeSubscription<K, S> implements Subscription {
     throw new UnsupportedOperationException();
   }
 
-  public void feedDemand() {
+  void feedDemand() {
     if (!this.isFlushing) {
       this.isFlushing = true;
       while (!values.isEmpty() && demand > 0) {
@@ -52,11 +56,11 @@ public class BridgeSubscription<K, S> implements Subscription {
     }
   }
 
-  public boolean ready() {
+  boolean ready() {
     return this.values.isEmpty() && this.demand > 0;
   }
 
-  public void setSubscriber(Subscriber<? super S> subscriber) {
+  void setSubscriber(Subscriber<? super V> subscriber) {
     Preconditions.checkArgument(this.subscriber == null);
     this.subscriber = subscriber;
     this.subscriber.onSubscribe(this);
@@ -66,7 +70,7 @@ public class BridgeSubscription<K, S> implements Subscription {
     Preconditions.checkArgument(values.isEmpty());
     Preconditions.checkArgument(demand > 0);
     List<ElementView<K, S>> values = engine.getUpdated(entityKey, previous);
-    values.forEach(p -> this.values.add(p.getState()));
+    values.forEach(p -> this.values.add(assembler.apply(p.getKey(), p.getState())));
     return values.size();
   }
 }

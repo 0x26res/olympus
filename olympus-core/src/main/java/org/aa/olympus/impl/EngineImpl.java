@@ -39,7 +39,12 @@ final class EngineImpl implements Engine {
   @Override
   public <K, S> void setSourceState(EntityKey<K, S> entityKey, K key, S state) {
     // This is safe as the EntityKey equals guarantees type equality
-    sources.get(entityKey).setState(key, state);
+    SourceManager manager = sources.get(entityKey);
+    if (manager == null) {
+      throw new IllegalArgumentException("Unknown source: " + entityKey);
+    } else {
+      manager.setState(key, state);
+    }
   }
 
   @Override

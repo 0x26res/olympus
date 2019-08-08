@@ -37,29 +37,28 @@ public class PortfolioValuation {
     }
   }
 
-  public static final EntityKey<String, KeyValuePair> PRICE =
-      Olympus.key("PRICE", String.class, KeyValuePair.class);
-  public static final EntityKey<String, KeyValuePair> QUANTITY =
-      Olympus.key("QUANTITY", String.class, KeyValuePair.class);
-  public static final EntityKey<String, KeyValuePair> VALUATION =
-      Olympus.key("VALUATION", String.class, KeyValuePair.class);
+  public static final EntityKey<String, Double> PRICE =
+      Olympus.key("PRICE", String.class, Double.class);
+  public static final EntityKey<String, Double> QUANTITY =
+      Olympus.key("QUANTITY", String.class, Double.class);
+  public static final EntityKey<String, Double> VALUATION =
+      Olympus.key("VALUATION", String.class, Double.class);
 
-  public static final class ValuationUpdater implements ElementUpdater<KeyValuePair> {
+  public static final class ValuationUpdater implements ElementUpdater<Double> {
 
-    private final ElementHandle<String, KeyValuePair> hello;
-    private final ElementHandle<String, KeyValuePair> world;
+    private final ElementHandle<String, Double> hello;
+    private final ElementHandle<String, Double> world;
 
     public ValuationUpdater(
-        ElementHandle<String, KeyValuePair> hello, ElementHandle<String, KeyValuePair> world) {
+        ElementHandle<String, Double> hello, ElementHandle<String, Double> world) {
       this.hello = hello;
       this.world = world;
     }
 
     @Override
-    public UpdateResult<KeyValuePair> update(
-        KeyValuePair previous, UpdateContext updateContext, Toolbox toolbox) {
-      return UpdateResult.maybe(
-          new KeyValuePair(hello.getKey(), hello.getState().value + world.getState().value));
+    public UpdateResult<Double> update(
+        Double previous, UpdateContext updateContext, Toolbox toolbox) {
+      return UpdateResult.maybe(hello.getState() + world.getState());
     }
 
     @Override
@@ -68,10 +67,10 @@ public class PortfolioValuation {
     }
   }
 
-  public static final class ValuationManager implements ElementManager<String, KeyValuePair> {
+  public static final class ValuationManager implements ElementManager<String, Double> {
 
     @Override
-    public ElementUpdater<KeyValuePair> create(
+    public ElementUpdater<Double> create(
         String elementKey, UpdateContext updateContext, Toolbox toolbox) {
       return new ValuationUpdater(
           toolbox.get(PRICE, elementKey).subscribe(SubscriptionType.STRONG),

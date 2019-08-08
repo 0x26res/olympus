@@ -39,12 +39,18 @@ public class AkkaBridgeTest {
 
     builder
         .from(builder.add(Source.fromPublisher(quantityProbe)))
-        .to(builder.add(bridge.fromAkka(PortfolioValuation.PRICE, KeyValuePair::getKey)));
+        .to(
+            builder.add(
+                bridge.fromAkka(
+                    PortfolioValuation.PRICE, KeyValuePair::getKey, KeyValuePair::getValue)));
     builder
         .from(builder.add(Source.fromPublisher(priceProbe)))
-        .to(builder.add(bridge.fromAkka(PortfolioValuation.QUANTITY, KeyValuePair::getKey)));
+        .to(
+            builder.add(
+                bridge.fromAkka(
+                    PortfolioValuation.QUANTITY, KeyValuePair::getKey, KeyValuePair::getValue)));
     builder
-        .from(builder.add(bridge.toAkka(PortfolioValuation.VALUATION)))
+        .from(builder.add(bridge.toAkka(PortfolioValuation.VALUATION, KeyValuePair::of)))
         .to(builder.add(Sink.fromSubscriber(valuationProbe)));
 
     return ClosedShape.getInstance();

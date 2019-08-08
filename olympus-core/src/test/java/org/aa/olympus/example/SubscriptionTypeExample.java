@@ -19,15 +19,21 @@ import org.junit.Test;
 
 public class SubscriptionTypeExample {
 
-  public static final EntityKey<String, String> MANDATORY_INPUT =
+  private static final EntityKey<String, String> MANDATORY_INPUT =
       Olympus.key("MANDATORY_INPUT", String.class, String.class);
-  public static final EntityKey<String, String> MANDATORY =
+  private static final EntityKey<String, String> MANDATORY =
       Olympus.key("MANDATORY", String.class, String.class);
-  public static final EntityKey<String, String> OPTIONAL_INPUT =
+
+  private static final EntityKey<String, String> OPTIONAL_INPUT =
       Olympus.key("OPTIONAL_INPUT", String.class, String.class);
-  public static final EntityKey<String, String> OPTIONAL =
+  private static final EntityKey<String, String> OPTIONAL =
       Olympus.key("OPTIONAL", String.class, String.class);
-  public static final EntityKey<String, String> RESULT =
+
+  private static final EntityKey<String, String> WEAK_INPUT =
+      Olympus.key("WEAK_INPUT", String.class, String.class);
+  private static final EntityKey<String, String> WEAK =
+      Olympus.key("WEAK", String.class, String.class);
+  private static final EntityKey<String, String> RESULT =
       Olympus.key("RESULT", String.class, String.class);
 
   private Engine engine;
@@ -42,18 +48,21 @@ public class SubscriptionTypeExample {
             .registerSource(OPTIONAL_INPUT)
             .registerInnerEntity(
                 OPTIONAL, new FailOn42Manager(OPTIONAL_INPUT), ImmutableSet.of(OPTIONAL_INPUT))
+            .registerSource(WEAK_INPUT)
+            .registerInnerEntity(WEAK, new FailOn42Manager(WEAK_INPUT), ImmutableSet.of(WEAK_INPUT))
             .registerInnerEntity(
-                RESULT, new MyElementManger(), ImmutableSet.of(MANDATORY, OPTIONAL))
+                RESULT, new MyElementManger(), ImmutableSet.of(MANDATORY, WEAK, OPTIONAL))
             .build();
   }
 
   @Test
-  public void testBothReady() {
+  public void testAllReady() {
 
     engine.setSourceState(MANDATORY_INPUT, "foo", "FOO");
     engine.setSourceState(OPTIONAL_INPUT, "foo", "FOO");
+    engine.setSourceState(WEAK_INPUT, "foo", "FOO");
     engine.runOnce();
-    Assert.assertEquals("FOO/FOO", engine.getState(RESULT, "foo"));
+    Assert.assertEquals("FOO/FOO/FOO", engine.getState(RESULT, "foo"));
   }
 
   @Test
@@ -61,12 +70,12 @@ public class SubscriptionTypeExample {
 
     engine.setSourceState(MANDATORY_INPUT, "foo", "FOO");
     engine.runOnce();
-    Assert.assertEquals("FOO/no value", engine.getState(RESULT, "foo"));
+    Assert.assertEquals("FOO/no value/no value", engine.getState(RESULT, "foo"));
   }
 
   @Test
-  public void testOptionalReady() {
-    engine.setSourceState(OPTIONAL_INPUT, "foo", "FOO");
+  public void testWeakReady() {
+    engine.setSourceState(WEAK_INPUT, "foo", "FOO");
     engine.runOnce();
     Assert.assertNull(engine.getState(RESULT, "foo"));
     Assert.assertEquals(ElementStatus.NOT_READY, engine.getElement(RESULT, "foo").getStatus());
@@ -80,55 +89,87 @@ public class SubscriptionTypeExample {
 
   @Test
   public void testWithFailures() {
-    // Mandatory missing, Optional error
-    engine.setSourceState(OPTIONAL_INPUT, "foo", "42");
+    // Mandatory missing, weak error
+    engine.setSourceState(WEAK_INPUT, "foo", "42");
     engine.runOnce();
-    Assert.assertEquals(ElementStatus.ERROR, engine.getElement(OPTIONAL, "foo").getStatus());
+    Assert.assertEquals(ElementStatus.ERROR, engine.getElement(WEAK, "foo").getStatus());
     Assert.assertEquals(ElementStatus.NOT_READY, engine.getElement(RESULT, "foo").getStatus());
-    // Mandatory present, Optional error
+    Assert.assertEquals(1, engine.getElement(RESULT, "foo").getUpdateContext().getUpdateId());
+    // Mandatory present, weak error
     engine.setSourceState(MANDATORY_INPUT, "foo", "foo");
     engine.runOnce();
-    Assert.assertEquals(ElementStatus.ERROR, engine.getElement(OPTIONAL, "foo").getStatus());
+    Assert.assertEquals(ElementStatus.ERROR, engine.getElement(WEAK, "foo").getStatus());
     Assert.assertEquals(ElementStatus.OK, engine.getElement(RESULT, "foo").getStatus());
-    Assert.assertEquals("foo/no value", engine.getElement(RESULT, "foo").getState());
-    // Mandatory present, Optional present
-    engine.setSourceState(OPTIONAL_INPUT, "foo", "FOO");
+    Assert.assertEquals("foo/no value/no value", engine.getElement(RESULT, "foo").getState());
+    Assert.assertEquals(2, engine.getElement(RESULT, "foo").getUpdateContext().getUpdateId());
+    // Mandatory present, weak present
+    engine.setSourceState(WEAK_INPUT, "foo", "FOO");
     engine.runOnce();
-    Assert.assertEquals(ElementStatus.OK, engine.getElement(OPTIONAL, "foo").getStatus());
+    Assert.assertEquals(ElementStatus.OK, engine.getElement(WEAK, "foo").getStatus());
     Assert.assertEquals(ElementStatus.OK, engine.getElement(MANDATORY, "foo").getStatus());
     Assert.assertEquals(ElementStatus.OK, engine.getElement(RESULT, "foo").getStatus());
-    Assert.assertEquals("foo/FOO", engine.getElement(RESULT, "foo").getState());
-    // Mandatory fails, Optional present
+    Assert.assertEquals(2, engine.getElement(RESULT, "foo").getUpdateContext().getUpdateId());
+    Assert.assertEquals(
+        "No update because dependency is weak",
+        "foo/no value/no value",
+        engine.getElement(RESULT, "foo").getState());
+    // Mandatory present, weak present + TICK
+    engine.setSourceState(MANDATORY_INPUT, "foo", "FOO1");
+    engine.runOnce();
+    Assert.assertEquals(4, engine.getElement(RESULT, "foo").getUpdateContext().getUpdateId());
+    Assert.assertEquals(
+        "No update because dependency is weak",
+        "FOO1/no value/FOO",
+        engine.getElement(RESULT, "foo").getState());
+    // Mandatory fails, Weak present
     engine.setSourceState(MANDATORY_INPUT, "foo", "42");
     engine.runOnce();
-    Assert.assertEquals(ElementStatus.OK, engine.getElement(OPTIONAL, "foo").getStatus());
+    Assert.assertEquals(ElementStatus.OK, engine.getElement(WEAK, "foo").getStatus());
     Assert.assertEquals(ElementStatus.ERROR, engine.getElement(MANDATORY, "foo").getStatus());
     Assert.assertEquals(ElementStatus.UPSTREAM_ERROR, engine.getElement(RESULT, "foo").getStatus());
     Assert.assertNull(engine.getElement(RESULT, "foo").getState());
-    // Both presents
+    // Mandatory OK, Weak present, Optional Present
     engine.setSourceState(MANDATORY_INPUT, "foo", "FOO");
+    engine.setSourceState(OPTIONAL_INPUT, "foo", "FOO");
     engine.runOnce();
-    Assert.assertEquals(ElementStatus.OK, engine.getElement(OPTIONAL, "foo").getStatus());
+    Assert.assertEquals(ElementStatus.OK, engine.getElement(WEAK, "foo").getStatus());
     Assert.assertEquals(ElementStatus.OK, engine.getElement(MANDATORY, "foo").getStatus());
     Assert.assertEquals(ElementStatus.OK, engine.getElement(RESULT, "foo").getStatus());
-    Assert.assertEquals("FOO/FOO", engine.getElement(RESULT, "foo").getState());
+    Assert.assertEquals("FOO/FOO/FOO", engine.getElement(RESULT, "foo").getState());
+    // Optional fails
+    engine.setSourceState(OPTIONAL_INPUT, "foo", "42");
+    engine.runOnce();
+    Assert.assertEquals(ElementStatus.ERROR, engine.getElement(OPTIONAL, "foo").getStatus());
+    Assert.assertEquals("FOO/no value/FOO", engine.getElement(RESULT, "foo").getState());
+    // Weak and Optional update, so everything updates
+    engine.setSourceState(OPTIONAL_INPUT, "foo", "foo");
+    engine.setSourceState(WEAK_INPUT, "foo", "foo");
+    engine.runOnce();
+    Assert.assertEquals(ElementStatus.OK, engine.getElement(OPTIONAL, "foo").getStatus());
+    Assert.assertEquals("FOO/foo/foo", engine.getElement(RESULT, "foo").getState());
   }
 
   public static class MyElementUpdater implements ElementUpdater<String> {
 
     ElementHandle<String, String> mandatory;
     ElementHandle<String, String> optional;
+    ElementHandle<String, String> weak;
 
     MyElementUpdater(String key, Toolbox toolbox) {
       mandatory = toolbox.get(MANDATORY, key).subscribe(SubscriptionType.STRONG);
-      optional = toolbox.get(OPTIONAL, key).subscribe(SubscriptionType.WEAK);
+      optional = toolbox.get(OPTIONAL, key).subscribe(SubscriptionType.OPTIONAL);
+      weak = toolbox.get(WEAK, key).subscribe(SubscriptionType.WEAK);
     }
 
     @Override
     public UpdateResult<String> update(
         String previous, UpdateContext updateContext, Toolbox toolbox) {
       return UpdateResult.maybe(
-          mandatory.getState() + '/' + optional.getStateOrDefault("no value"));
+          mandatory.getState()
+              + '/'
+              + optional.getStateOrDefault("no value")
+              + '/'
+              + weak.getStateOrDefault("no value"));
     }
 
     @Override
@@ -179,7 +220,7 @@ public class SubscriptionTypeExample {
 
     private final EntityKey<String, String> sourceEntity;
 
-    public FailOn42Manager(EntityKey<String, String> sourceEntity) {
+    FailOn42Manager(EntityKey<String, String> sourceEntity) {
       this.sourceEntity = sourceEntity;
     }
 

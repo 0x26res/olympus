@@ -59,13 +59,14 @@ final class ElementHandleAdapter<K, S> implements ElementHandle<K, S> {
     if (subscriptionType != this.subscriptionType) {
       switch (subscriptionType) {
         case STRONG:
-        case WEAK:
+        case OPTIONAL:
           broadcaster.updateSubscriber(this, true);
           subscriber.updateBroadcaster(this, true);
           break;
         case NONE:
-          broadcaster.updateSubscriber(this, true);
-          subscriber.updateBroadcaster(this, true);
+        case WEAK:
+          broadcaster.updateSubscriber(this, false);
+          subscriber.updateBroadcaster(this, false);
           break;
         default:
           throw new UnsupportedValueException(SubscriptionType.class, subscriptionType);

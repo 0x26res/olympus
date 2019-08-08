@@ -5,6 +5,8 @@ public enum SubscriptionType {
 
   /** Notify on all updates, propagate failure state */
   STRONG(true, true),
+  /** Notify on all updates, propagate failure state */
+  OPTIONAL(true, false),
   /** Does not notify on updates, does not propagate failure */
   WEAK(false, false),
   /** Not subscribed at all (can be used to unsubscribe) */
