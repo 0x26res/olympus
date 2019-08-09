@@ -4,6 +4,7 @@ import org.aa.olympus.api.ElementStatus;
 import org.aa.olympus.api.ElementView;
 import org.junit.Assert;
 
+// TODO: expose in a test library
 public final class OlympusAssert {
 
   private OlympusAssert() {}

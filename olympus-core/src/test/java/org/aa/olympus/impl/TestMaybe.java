@@ -1,6 +1,7 @@
 package org.aa.olympus.impl;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.TypeToken;
 import java.util.function.Consumer;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementManager;
@@ -8,17 +9,21 @@ import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.ElementView;
 import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.EventChannel;
 import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.SubscriptionType;
 import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
+import org.aa.olympus.examples.KeyValuePair;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 public class TestMaybe {
 
+  private static final EventChannel<KeyValuePair<String, String>> SOURCE_CHANNEL =
+      Olympus.channel("SOURCE", new TypeToken<KeyValuePair<String, String>>() {});
   private static final EntityKey<String, String> SOURCE =
       Olympus.key("SOURCE", String.class, String.class);
   private static final EntityKey<String, String> ENTITY =
@@ -31,27 +36,32 @@ public class TestMaybe {
 
     engine =
         Olympus.builder()
-            .registerSource(SOURCE)
+            .registerEventChannel(SOURCE_CHANNEL)
+            .eventToEntity(SOURCE_CHANNEL, SOURCE, KeyValuePair::getKey, KeyValuePair::getValue)
             .registerInnerEntity(ENTITY, new PassThroughManager(), ImmutableSet.of(SOURCE))
             .build();
+  }
+
+  private void inject(String key, String state) {
+    engine.injectEvent(SOURCE_CHANNEL, KeyValuePair.of(key, state));
   }
 
   @Test
   public void testMaybe() {
 
-    engine.setSourceState(SOURCE, "foo", "FOO");
+    inject("foo", "FOO");
     engine.runOnce();
 
     ElementView<String, String> element = engine.getElement(ENTITY, "foo");
     Assert.assertEquals("FOO", element.getState());
     Assert.assertEquals(1, element.getUpdateContext().getUpdateId());
 
-    engine.setSourceState(SOURCE, "foo", "FOO");
+    inject("foo", "FOO");
     engine.runOnce();
     Assert.assertEquals("FOO", element.getState());
     Assert.assertEquals(1, element.getUpdateContext().getUpdateId());
 
-    engine.setSourceState(SOURCE, "foo", "FOO2");
+    inject("foo", "FOO2");
     engine.runOnce();
     Assert.assertEquals("FOO2", element.getState());
     Assert.assertEquals(3, element.getUpdateContext().getUpdateId());

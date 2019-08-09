@@ -77,3 +77,4 @@ Some key advantages of the olympus engine is that:
 * Efficient event compression algorithm: if several prices update at the same time, relevant indices only get notified once
 * One callback to rule them all: if a price updates or a composition updates, the same callback get called.
 * More declarative code, less imperative bug: Entities keys and values are declared once, and their state is managed by the engine. There's no need to store the state of every prices in each index calculator.  
+* Propagate events, creation and updates entity by entity and pass the value upon creation?

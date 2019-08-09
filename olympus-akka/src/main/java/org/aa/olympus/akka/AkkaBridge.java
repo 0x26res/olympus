@@ -7,9 +7,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.EventChannel;
 import org.aa.olympus.api.UpdateContext;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -31,10 +31,8 @@ public final class AkkaBridge {
 
   // TODO: add back pressure policy (queue size, already running)
   // TODO: add error handling
-  public <V, K, S> Sink<V, NotUsed> fromAkka(
-      EntityKey<K, S> entityKey, Function<V, K> keyExtractor, Function<V, S> valueExtractor) {
-    return Sink.fromSubscriber(
-        new BridgeSubscriber<>(this, entityKey, keyExtractor, valueExtractor));
+  public <E> Sink<E, NotUsed> fromAkka(EventChannel<E> eventChannel) {
+    return Sink.fromSubscriber(new BridgeSubscriber<>(this, eventChannel));
   }
 
   public <K, S, V> Source<V, NotUsed> toAkka(
@@ -82,7 +80,7 @@ public final class AkkaBridge {
   private void run() {
     UpdateContext previousContext = engine.getLatestContext();
     List<AkkaEvent> events = queue.flush();
-    for (AkkaEvent<?, ?> event : events) {
+    for (AkkaEvent<?> event : events) {
       handleEvent(event);
     }
     engine.runOnce();
@@ -95,7 +93,7 @@ public final class AkkaBridge {
         "Run inputs={} outputs={} context={}", events.size(), flushed, engine.getLatestContext());
   }
 
-  private <K, S> void handleEvent(AkkaEvent<K, S> event) {
-    engine.setSourceState(event.getEntityKey(), event.getKey(), event.getState());
+  private <E> void handleEvent(AkkaEvent<E> event) {
+    engine.injectEvent(event.getChannel(), event.getValue());
   }
 }

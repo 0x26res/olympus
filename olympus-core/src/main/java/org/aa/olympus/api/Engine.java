@@ -6,8 +6,7 @@ import java.util.List;
 /** Holds an instance of the engine */
 public interface Engine {
 
-  /** Updates the state of a source entity element */
-  <K, S> void setSourceState(EntityKey<K, S> entityKey, K key, S state);
+  <E> void injectEvent(EventChannel<E> channel, E event);
 
   /** Run the engine once, processing all updates */
   void runOnce(LocalDateTime time);

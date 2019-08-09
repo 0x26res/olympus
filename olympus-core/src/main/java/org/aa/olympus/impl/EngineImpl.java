@@ -15,6 +15,8 @@ import java.util.function.Consumer;
 import org.aa.olympus.api.ElementView;
 import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.Event;
+import org.aa.olympus.api.EventChannel;
 import org.aa.olympus.api.UpdateContext;
 
 // TODO: consider adding an extra layer of abstraction to run the engine
@@ -24,27 +26,20 @@ final class EngineImpl implements Engine {
   private final List<EntityKey> sorted;
   private final Map<EntityKey, SourceManager> sources;
   private final Map<EntityKey, EntityManager> entities;
+  private final Map<EventChannel, List<EntityManager>> channelToEntities;
+  private final List<EventImpl> pendingEvents = new ArrayList<>();
 
   EngineImpl(
       EngineContext engineContext,
       List<EntityKey> sorted,
-      final Map<EntityKey, SourceManager> sources,
-      final Map<EntityKey, EntityManager> entities) {
+      Map<EntityKey, SourceManager> sources,
+      Map<EntityKey, EntityManager> entities,
+      Map<EventChannel, List<EntityManager>> channelToEntities) {
     this.engineContext = engineContext;
     this.sorted = sorted;
     this.sources = ImmutableMap.copyOf(sources);
     this.entities = ImmutableMap.copyOf(entities);
-  }
-
-  @Override
-  public <K, S> void setSourceState(EntityKey<K, S> entityKey, K key, S state) {
-    // This is safe as the EntityKey equals guarantees type equality
-    SourceManager manager = sources.get(entityKey);
-    if (manager == null) {
-      throw new IllegalArgumentException("Unknown source: " + entityKey);
-    } else {
-      manager.setState(key, state);
-    }
+    this.channelToEntities = ImmutableMap.copyOf(channelToEntities);
   }
 
   @Override
@@ -52,6 +47,7 @@ final class EngineImpl implements Engine {
     Preconditions.checkArgument(!time.isBefore(this.engineContext.getLatestContext().getTime()));
     this.engineContext.setLatestContext(
         new UpdateContextImpl(time, this.engineContext.getLatestContext().getUpdateId() + 1));
+    propagateEvents();
     propagateCreations();
     propagateUpdates();
   }
@@ -67,6 +63,17 @@ final class EngineImpl implements Engine {
       EntityManager<?, ?> entityManager = entities.get(entityKey);
       entityManager.run();
     }
+  }
+
+  private void propagateEvents() {
+    for (Event event : pendingEvents) {
+      List<EntityManager> entities =
+          channelToEntities.getOrDefault(event.getChannel(), Collections.emptyList());
+      for (EntityManager entity : entities) {
+        entity.processEvent(event);
+      }
+    }
+    pendingEvents.clear();
   }
 
   private void propagateCreations() {
@@ -165,5 +172,15 @@ final class EngineImpl implements Engine {
       }
       return modified;
     }
+  }
+
+  @Override
+  public <E> void injectEvent(EventChannel<E> channel, E event) {
+    Preconditions.checkArgument(
+        channelToEntities.containsKey(channel),
+        "%s is not subscribed to %s",
+        channel,
+        channelToEntities.keySet());
+    this.pendingEvents.add(new EventImpl<>(channel, event));
   }
 }

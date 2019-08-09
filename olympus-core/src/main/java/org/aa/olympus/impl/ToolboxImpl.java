@@ -1,9 +1,11 @@
 package org.aa.olympus.impl;
 
 import com.google.common.base.Preconditions;
-import java.util.Map;
+import com.google.common.collect.ImmutableMap;
+import java.util.List;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.Event;
 import org.aa.olympus.api.Toolbox;
 
 // TODO: One toolbox per ElementUnit
@@ -11,12 +13,15 @@ import org.aa.olympus.api.Toolbox;
 // TODO: how to deal with multiple subscriptions
 public class ToolboxImpl implements Toolbox {
 
-  private final Map<EntityKey, EntityManager> dependencies;
+  private final ImmutableMap<EntityKey, EntityManager> dependencies;
   private final ElementUnit unit;
+  private List<Event> events;
 
-  public ToolboxImpl(Map<EntityKey, EntityManager> dependencies, ElementUnit unit) {
+  public ToolboxImpl(
+      ImmutableMap<EntityKey, EntityManager> dependencies, ElementUnit unit, List<Event> events) {
     this.dependencies = dependencies;
     this.unit = unit;
+    this.events = events;
   }
 
   @Override
@@ -33,5 +38,10 @@ public class ToolboxImpl implements Toolbox {
     EntityManager<K, S> entityManager = (EntityManager<K, S>) dependencies.get(entityKey);
     ElementUnit<K, S> broadcaster = entityManager.get(elementKey, true);
     return broadcaster.createHandleAdapter(unit);
+  }
+
+  @Override
+  public List<Event> getEvents() {
+    return events;
   }
 }

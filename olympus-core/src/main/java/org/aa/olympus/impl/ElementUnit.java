@@ -2,16 +2,21 @@ package org.aa.olympus.impl;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import org.aa.olympus.api.ElementHandle;
+import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementStatus;
 import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.ElementView;
 import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.Event;
 import org.aa.olympus.api.SubscriptionType;
-import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
 import org.aa.olympus.api.UpdateResult.UpdateStatus;
@@ -28,20 +33,33 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
   private S state;
   private int notifications;
   private UpdateContext updateContext = UpdateContextImpl.NONE;
+  private List<Event> pendingEvents = new ArrayList<>();
+  private ToolboxImpl toolbox;
 
-  ElementUnit(EngineContext engineContext, EntityKey<K, S> entityKey, K key) {
+  ElementUnit(
+      EngineContext engineContext,
+      EntityKey<K, S> entityKey,
+      K key,
+      ImmutableMap<EntityKey, EntityManager> dependencies) {
     this.engineContext = engineContext;
     this.entityKey = entityKey;
     this.key = key;
     this.updater = null;
+    this.toolbox = new ToolboxImpl(dependencies, this, Collections.unmodifiableList(pendingEvents));
     status = ElementStatus.SHADOW;
   }
 
-  void setUpdater(ElementUpdater<S> updater) {
-    Preconditions.checkNotNull(updater);
+  void createUpdater(ElementManager<K, S> elementManager) {
     Preconditions.checkState(this.updater == null);
-    this.updater = updater;
-    status = ElementStatus.CREATED;
+    updater = elementManager.create(key, engineContext.getLatestContext(), toolbox);
+    Preconditions.checkNotNull(
+        updater,
+        "%s cannot refuse to create a %s for %s:%s",
+        ElementManager.class.getSimpleName(),
+        ElementUpdater.class.getSimpleName(),
+        entityKey,
+        key);
+    this.status = ElementStatus.CREATED;
   }
 
   public EntityKey<K, S> getEntityKey() {
@@ -89,8 +107,8 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
     ++notifications;
   }
 
-  public void update(Toolbox toolbox) {
-    UpdateResult<S> result = getUpdateResult(toolbox);
+  public void update() {
+    UpdateResult<S> result = getUpdateResult();
     if (handleUpdateResult(result)) {
       subscribers.forEach(ElementHandleAdapter::stain);
       this.updateContext = engineContext.getLatestContext();
@@ -98,15 +116,17 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
     this.notifications = 0;
   }
 
-  private UpdateResult<S> getUpdateResult(Toolbox toolbox) {
+  private UpdateResult<S> getUpdateResult() {
     ElementStatus broadcastersStatus = getBroadcastersStatus();
     switch (broadcastersStatus) {
       case OK:
         try {
           return this.updater.update(state, engineContext.getLatestContext(), toolbox);
         } catch (Exception e) {
-          engineContext.getErrorLogger().error("{} failed: {}", this, e.getMessage());
+          engineContext.getErrorLogger().error("{} failed: {}", this, e.getMessage(), e);
           return UpdateResult.error();
+        } finally {
+          pendingEvents.clear();
         }
       case ERROR:
         return UpdateResult.upstreamError();
@@ -214,5 +234,10 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
   @Override
   public String toString() {
     return MoreObjects.toStringHelper(this).add("entityKey", entityKey).add("key", key).toString();
+  }
+
+  public <E> void queueEvent(Event<E> event) {
+    pendingEvents.add(event);
+    ++notifications;
   }
 }

@@ -4,10 +4,14 @@ import static org.hamcrest.core.StringStartsWith.startsWith;
 
 import com.google.common.collect.ImmutableSet;
 import java.time.LocalDateTime;
+import org.aa.olympus.api.ElementStatus;
 import org.aa.olympus.api.Engine;
+import org.aa.olympus.api.EventChannel;
 import org.aa.olympus.api.Olympus;
-import org.aa.olympus.example.HelloWorld;
-import org.aa.olympus.example.HelloWorld.ConcatenatorElementManager;
+import org.aa.olympus.examples.HelloWorld;
+import org.aa.olympus.examples.HelloWorld.ConcatenatorElementManager;
+import org.aa.olympus.examples.HelloWorld.Message;
+import org.aa.olympus.utils.OlympusAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -16,29 +20,53 @@ public class EngineBuilderImplTest {
 
   @Rule public ExpectedException expectedException = ExpectedException.none();
 
+  private Engine engine;
+
+  private void sendMessage(EventChannel<Message> channel, String key, String value) {
+    engine.injectEvent(channel, Message.of(key, value));
+  }
+
   @Test
   public void helloWorldTest() {
 
-    Engine engine = HelloWorld.createEngineUsingSimpleAPI();
+    engine = HelloWorld.createEngine();
 
-    engine.setSourceState(HelloWorld.LEFT, "UC", "LEFT");
-    engine.setSourceState(HelloWorld.RIGHT, "UC", "RIGHT");
+    sendMessage(HelloWorld.LEFT_CHANNEL, "UC", "LEFT");
+    sendMessage(HelloWorld.RIGHT_CHANNEL, "UC", "RIGHT");
     engine.runOnce(LocalDateTime.now());
 
-    engine.setSourceState(HelloWorld.LEFT, "LC", "hello");
-    engine.setSourceState(HelloWorld.RIGHT, "LC", "world");
+    sendMessage(HelloWorld.LEFT_CHANNEL, "LC", "hello");
+    sendMessage(HelloWorld.RIGHT_CHANNEL, "LC", "world");
     engine.runOnce(LocalDateTime.now());
 
-    engine.setSourceState(HelloWorld.LEFT, "LC", "hello");
-    engine.setSourceState(HelloWorld.RIGHT, "LC", "world");
+    sendMessage(HelloWorld.LEFT_CHANNEL, "LC", "hello");
+    sendMessage(HelloWorld.RIGHT_CHANNEL, "LC", "world");
     engine.runOnce(LocalDateTime.now());
 
-    engine.setSourceState(HelloWorld.LEFT, "CC", "Hello");
+    sendMessage(HelloWorld.LEFT_CHANNEL, "CC", "Hello");
     // Only partial
     engine.runOnce(LocalDateTime.now());
 
-    engine.setSourceState(HelloWorld.RIGHT, "CC", "World");
+    sendMessage(HelloWorld.RIGHT_CHANNEL, "CC", "World");
     engine.runOnce(LocalDateTime.now());
+  }
+
+  @Test
+  public void helloWorldEventTest() {
+
+    engine = HelloWorld.createEngine();
+
+    sendMessage(HelloWorld.LEFT_CHANNEL, "UC", "LEFT");
+    engine.runOnce();
+
+    OlympusAssert.assertElement(
+        engine.getElement(HelloWorld.BOTH, "UC"), ElementStatus.NOT_READY, null, 1);
+
+    sendMessage(HelloWorld.RIGHT_CHANNEL, "UC", "RIGHT");
+    engine.runOnce();
+
+    OlympusAssert.assertElement(
+        engine.getElement(HelloWorld.BOTH, "UC"), ElementStatus.OK, "LEFT RIGHT", 2);
   }
 
   @Test
@@ -47,11 +75,8 @@ public class EngineBuilderImplTest {
     expectedException.expectMessage(startsWith("Missing dependencies for BOTH"));
 
     Olympus.builder()
-        .registerSource(HelloWorld.LEFT)
         .registerInnerEntity(
-            HelloWorld.BOTH,
-            new ConcatenatorElementManager(),
-            ImmutableSet.of(HelloWorld.LEFT, HelloWorld.RIGHT));
+            HelloWorld.BOTH, new ConcatenatorElementManager(), ImmutableSet.of(HelloWorld.LEFT));
   }
 
   @Test

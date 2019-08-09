@@ -10,11 +10,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.EventChannel;
 import org.aa.olympus.impl.EngineBuilderImpl.EntityUnit;
-import org.aa.olympus.impl.SourceManager.ElementManagerAdapter;
 import org.slf4j.LoggerFactory;
 
 /** Turn a {@link EngineBuilderImpl} into an {@link EngineImpl} */
@@ -28,6 +29,7 @@ final class EngineAssembler {
   private List<EntityKey> topologicalSort;
   private Map<EntityKey, EntityManager> entities;
   private Map<EntityKey, SourceManager> sources;
+  private Map<EventChannel, List<EntityManager>> channelToEntities;
 
   EngineAssembler(EngineBuilderImpl builder) {
     this.builder = builder;
@@ -52,9 +54,9 @@ final class EngineAssembler {
     reverseDependencies();
     sort();
     prepareManagers();
-    buildSources();
     buildEntities();
-    return new EngineImpl(engineContext, topologicalSort, sources, entities);
+    mapChannelToEntities();
+    return new EngineImpl(engineContext, topologicalSort, sources, entities, channelToEntities);
   }
 
   private void createContext() {
@@ -65,13 +67,11 @@ final class EngineAssembler {
     entityToDependencies =
         builder.entities.values().stream()
             .collect(Collectors.toMap(EntityUnit::getEntityKey, EntityUnit::getDependencies));
-    builder.sources.keySet().forEach(k -> entityToDependencies.put(k, Collections.emptySet()));
     entityToDependencies = makeImmutable(entityToDependencies);
   }
 
   private Set<EntityKey> getAllKeys() {
-    Set<EntityKey> results = new HashSet<>(builder.entities.size() + builder.sources.size());
-    results.addAll(builder.sources.keySet());
+    Set<EntityKey> results = new HashSet<>(builder.entities.size());
     results.addAll(builder.entities.keySet());
     return results;
   }
@@ -93,43 +93,17 @@ final class EngineAssembler {
     this.sources = new HashMap<>();
   }
 
-  private void buildSources() {
-    Preconditions.checkArgument(!builder.sources.isEmpty());
-    for (EngineBuilderImpl.SourceUnit<?, ?> sourceUnit : builder.sources.values()) {
-      createSource(sourceUnit);
-    }
-  }
-
-  private <K, S> void createSource(EngineBuilderImpl.SourceUnit<K, S> sourceUnit) {
-    Map<K, SourceUnit<K, S>> units = new HashMap<>();
-
-    EntityManager<K, S> entityManager =
-        new EntityManager<>(
-            engineContext,
-            sourceUnit.key,
-            new ElementManagerAdapter<>(units),
-            ImmutableMap.of(),
-            getDependents(sourceUnit.key));
-
-    entities.put(sourceUnit.key, entityManager);
-    sources.put(sourceUnit.key, new SourceManager<>(units, entityManager));
-  }
-
   private void buildEntities() {
 
     for (EntityKey entityKey : topologicalSort) {
       EngineBuilderImpl.EntityUnit entity = builder.entities.get(entityKey);
-      if (entity != null) {
-        entities.put(
-            entity.getEntityKey(),
-            entity.createManager(
-                engineContext,
-                getDependenciesManagers((entity.getEntityKey())),
-                getDependents(entity.getEntityKey())));
-      } else {
-        Preconditions.checkArgument(
-            builder.sources.containsKey(entityKey), "%s should be a source", entityKey);
-      }
+      Preconditions.checkArgument(entity != null);
+      entities.put(
+          entity.getEntityKey(),
+          entity.createManager(
+              engineContext,
+              getDependenciesManagers((entity.getEntityKey())),
+              getDependents(entity.getEntityKey())));
     }
   }
 
@@ -146,6 +120,20 @@ final class EngineAssembler {
     return getDependencies(entityKey).stream()
         .map(p -> Preconditions.checkNotNull(entities.get(p), "Missing deps %s", p))
         .collect(Collectors.toMap(EntityManager::getKey, p -> p));
+  }
+
+  private void mapChannelToEntities() {
+
+    Map<EventChannel, List<EntityManager>> results = new HashMap<>();
+    for (EntityManager entityManager : entities.values()) {
+      Set<EventChannel> channels = entityManager.getEventChannels();
+      for (EventChannel<?> eventChannel : channels) {
+        results.computeIfAbsent(eventChannel, p -> new ArrayList<>()).add(entityManager);
+      }
+    }
+    this.channelToEntities =
+        results.entrySet().stream()
+            .collect(Collectors.toMap(Entry::getKey, p -> ImmutableList.copyOf(p.getValue())));
   }
 
   private void sort() {

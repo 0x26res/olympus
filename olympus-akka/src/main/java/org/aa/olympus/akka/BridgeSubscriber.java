@@ -1,26 +1,17 @@
 package org.aa.olympus.akka;
 
-import java.util.function.Function;
-import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.EventChannel;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-public class BridgeSubscriber<V, K, S> implements Subscriber<V> {
+public class BridgeSubscriber<E> implements Subscriber<E> {
 
   private AkkaBridge akkaBridge;
-  private final EntityKey<K, S> entityKey;
-  private final Function<V, K> keyExtractor;
-  private final Function<V, S> valueExtractor;
+  private final EventChannel<E> eventChannel;
 
-  public BridgeSubscriber(
-      AkkaBridge akkaBridge,
-      EntityKey<K, S> entityKey,
-      Function<V, K> keyExtractor,
-      Function<V, S> valueExtractor) {
+  public BridgeSubscriber(AkkaBridge akkaBridge, EventChannel<E> eventChannel) {
     this.akkaBridge = akkaBridge;
-    this.entityKey = entityKey;
-    this.keyExtractor = keyExtractor;
-    this.valueExtractor = valueExtractor;
+    this.eventChannel = eventChannel;
   }
 
   @Override
@@ -29,9 +20,9 @@ public class BridgeSubscriber<V, K, S> implements Subscriber<V> {
   }
 
   @Override
-  public void onNext(V value) {
-    AkkaEvent<K, S> event =
-        new AkkaEvent<>(entityKey, keyExtractor.apply(value), valueExtractor.apply(value));
+  public void onNext(E value) {
+
+    AkkaEvent<E> event = new AkkaEvent<>(eventChannel, value);
     akkaBridge.queue(event);
     akkaBridge.runIfNeeded();
   }

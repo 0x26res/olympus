@@ -3,6 +3,7 @@ package org.aa.olympus.impl;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -11,17 +12,18 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementStatus;
-import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.EntityKey;
-import org.aa.olympus.api.Toolbox;
+import org.aa.olympus.api.Event;
+import org.aa.olympus.api.EventChannel;
 
 final class EntityManager<K, S> {
 
   private final EngineContext engineContext;
   private final EntityKey<K, S> key;
   private final ElementManager<K, S> elementManager;
-  private final Map<EntityKey, EntityManager> dependencies;
+  private final ImmutableMap<EntityKey, EntityManager> dependencies;
   private final Set<EntityKey> dependents;
+  private final Set<EventChannel> eventChannels;
 
   private final Map<K, ElementUnit<K, S>> units = new HashMap<>();
 
@@ -30,12 +32,14 @@ final class EntityManager<K, S> {
       EntityKey<K, S> key,
       ElementManager<K, S> elementManager,
       Map<EntityKey, EntityManager> dependencies,
-      Set<EntityKey> dependents) {
+      Set<EntityKey> dependents,
+      Set<EventChannel> eventChannels) {
     this.engineContext = engineContext;
     this.key = key;
     this.elementManager = elementManager;
     this.dependencies = ImmutableMap.copyOf(dependencies);
     this.dependents = ImmutableSet.copyOf(dependents);
+    this.eventChannels = ImmutableSet.copyOf(eventChannels);
   }
 
   public EntityKey<K, S> getKey() {
@@ -54,22 +58,14 @@ final class EntityManager<K, S> {
     return elementManager;
   }
 
-  ElementUnit<K, S> get(K key, boolean create) {
+  ElementUnit<K, S> get(K key, boolean createUpdater) {
     ElementUnit<K, S> unit = units.get(key);
     if (unit == null) {
-      unit = new ElementUnit<>(engineContext, this.key, key);
+      unit = new ElementUnit<>(engineContext, this.key, key, dependencies);
       units.put(key, unit);
     }
-    if (unit.getStatus() == ElementStatus.SHADOW && create) {
-      Toolbox toolbox = new ToolboxImpl(dependencies, unit);
-      ElementUpdater<S> updater =
-          elementManager.create(key, engineContext.getLatestContext(), toolbox);
-      Preconditions.checkNotNull(
-          updater,
-          "%s an not refuse to create a %s",
-          ElementManager.class.getSimpleName(),
-          ElementUpdater.class.getSimpleName());
-      unit.setUpdater(updater);
+    if (unit.getStatus() == ElementStatus.SHADOW && createUpdater) {
+      unit.createUpdater(elementManager);
     }
     return unit;
   }
@@ -77,7 +73,7 @@ final class EntityManager<K, S> {
   void run() {
     for (ElementUnit<K, S> element : units.values()) {
       if (element.getNotifications() != 0) {
-        element.update(new ToolboxImpl(dependencies, element));
+        element.update();
       }
     }
   }
@@ -86,6 +82,19 @@ final class EntityManager<K, S> {
     return units.values().stream()
         .filter(p -> p.getStatus() == ElementStatus.CREATED)
         .collect(Collectors.toList());
+  }
+
+  public Set<EventChannel> getEventChannels() {
+    return eventChannels;
+  }
+
+  public <E> void processEvent(Event<E> event) {
+    Preconditions.checkArgument(eventChannels.contains(event.getChannel()));
+    List<K> toNotify = new ArrayList<>();
+    elementManager.onEvent(event, toNotify::add);
+    for (K key : toNotify) {
+      get(key, true).queueEvent(event);
+    }
   }
 
   @Override

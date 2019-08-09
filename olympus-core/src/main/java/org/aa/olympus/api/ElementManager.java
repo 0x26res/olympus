@@ -17,4 +17,6 @@ public interface ElementManager<K, S> {
    * appended to {@code toNotify}
    */
   <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<K> toNotify);
+
+  default <E> void onEvent(Event<E> event, Consumer<K> toNotify) {};
 }

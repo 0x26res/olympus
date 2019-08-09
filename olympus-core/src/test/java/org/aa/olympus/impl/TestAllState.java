@@ -1,6 +1,7 @@
 package org.aa.olympus.impl;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.TypeToken;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.aa.olympus.api.ElementHandle;
@@ -10,11 +11,13 @@ import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.ElementView;
 import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.EventChannel;
 import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.SubscriptionType;
 import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
+import org.aa.olympus.examples.KeyValuePair;
 import org.aa.olympus.utils.OlympusAssert;
 import org.junit.Assert;
 import org.junit.Before;
@@ -35,12 +38,13 @@ public class TestAllState {
     }
   }
 
+  private static final EventChannel<KeyValuePair<String, Message>> SOURCE_CHANNEL =
+      Olympus.channel("SOURCE", new TypeToken<KeyValuePair<String, Message>>() {});
+
   private static final EntityKey<String, Message> SOURCE =
       Olympus.key("SOURCE", String.class, Message.class);
   private static final EntityKey<String, String> ENTITY =
       Olympus.key("ENTITY", String.class, String.class);
-  private static final EntityKey<String, String> SUBSCIRBER =
-      Olympus.key("SUBSCRIBER", String.class, String.class);
 
   private Engine engine;
   ElementView<String, String> handle;
@@ -49,7 +53,8 @@ public class TestAllState {
   public void setUp() {
     engine =
         Olympus.builder()
-            .registerSource(SOURCE)
+            .registerEventChannel(SOURCE_CHANNEL)
+            .eventToEntity(SOURCE_CHANNEL, SOURCE, KeyValuePair::getKey, KeyValuePair::getValue)
             .registerInnerEntity(ENTITY, new MessagePasserManager(), ImmutableSet.of(SOURCE))
             .build();
     handle = engine.getElement(ENTITY, "foo");
@@ -65,13 +70,13 @@ public class TestAllState {
     Assert.assertSame(UpdateContextImpl.NONE, handle.getUpdateContext());
     Assert.assertEquals(ElementStatus.SHADOW, handle.getStatus());
 
-    engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.update("FOO")));
+    inject("foo", Message.ofValue(UpdateResult.update("FOO")));
     engine.runOnce();
     Assert.assertEquals(2, handle.getUpdateContext().getUpdateId());
     Assert.assertEquals("FOO", handle.getState());
     Assert.assertEquals(ElementStatus.OK, handle.getStatus());
 
-    engine.setSourceState(SOURCE, "foo", new Message(new RaiseSupplier()));
+    inject("foo", new Message(new RaiseSupplier()));
     engine.runOnce();
     Assert.assertEquals(ElementStatus.ERROR, handle.getStatus());
 
@@ -79,24 +84,28 @@ public class TestAllState {
 
   }
 
+  void inject(String key, Message message) {
+    engine.injectEvent(SOURCE_CHANNEL, KeyValuePair.of(key, message));
+  }
+
   @Test
   public void testNotReady() {
 
     OlympusAssert.assertElement(handle, ElementStatus.SHADOW, null, 0);
 
-    engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.notReady()));
+    inject("foo", Message.ofValue(UpdateResult.notReady()));
     engine.runOnce();
     OlympusAssert.assertElement(handle, ElementStatus.NOT_READY, null, 1);
 
-    engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.notReady()));
+    inject("foo", Message.ofValue(UpdateResult.notReady()));
     engine.runOnce();
     OlympusAssert.assertElement(handle, ElementStatus.NOT_READY, null, 1);
 
-    engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.update("FOO")));
+    inject("foo", Message.ofValue(UpdateResult.update("FOO")));
     engine.runOnce();
     OlympusAssert.assertElement(handle, ElementStatus.OK, "FOO", 3);
 
-    engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.notReady()));
+    inject("foo", Message.ofValue(UpdateResult.notReady()));
     engine.runOnce();
     OlympusAssert.assertElement(handle, ElementStatus.NOT_READY, null, 4);
   }
@@ -110,30 +119,30 @@ public class TestAllState {
 
   @Test
   public void testDelete() {
-    engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.notReady()));
+    inject("foo", Message.ofValue(UpdateResult.notReady()));
     engine.runOnce();
     OlympusAssert.assertElement(handle, ElementStatus.NOT_READY, null, 1);
 
-    engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.delete()));
+    inject("foo", Message.ofValue(UpdateResult.delete()));
     engine.runOnce();
     OlympusAssert.assertElement(handle, ElementStatus.DELETED, null, 2);
   }
 
   @Test
   public void testMaybe() {
-    engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.maybe("FOO")));
+    inject("foo", Message.ofValue(UpdateResult.maybe("FOO")));
     engine.runOnce();
     OlympusAssert.assertElement(handle, ElementStatus.OK, "FOO", 1);
 
-    engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.maybe("FOO")));
+    inject("foo", Message.ofValue(UpdateResult.maybe("FOO")));
     engine.runOnce();
     OlympusAssert.assertElement(handle, ElementStatus.OK, "FOO", 1);
 
-    engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.maybe("BAR")));
+    inject("foo", Message.ofValue(UpdateResult.maybe("BAR")));
     engine.runOnce();
     OlympusAssert.assertElement(handle, ElementStatus.OK, "BAR", 3);
 
-    engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.maybe("FOO")));
+    inject("foo", Message.ofValue(UpdateResult.maybe("FOO")));
     engine.runOnce();
     OlympusAssert.assertElement(handle, ElementStatus.OK, "FOO", 4);
   }

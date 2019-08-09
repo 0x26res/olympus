@@ -3,6 +3,7 @@ package org.aa.olympus.api;
 import com.google.common.reflect.TypeToken;
 import org.aa.olympus.impl.EngineBuilderImpl;
 import org.aa.olympus.impl.EntityKeyImpl;
+import org.aa.olympus.impl.EventChannelImpl;
 
 /** Gives access to the implementation of the API */
 public final class Olympus {
@@ -28,5 +29,13 @@ public final class Olympus {
 
   public static <K, S> EntityKey<K, S> key(String name, TypeToken<K> keyType, Class<S> stateType) {
     return new EntityKeyImpl<>(name, keyType, TypeToken.of(stateType));
+  }
+
+  public static <E> EventChannel<E> channel(String name, TypeToken<E> eventType) {
+    return new EventChannelImpl<>(name, eventType);
+  }
+
+  public static <E> EventChannel<E> channel(String name, Class<E> eventType) {
+    return new EventChannelImpl<>(name, TypeToken.of(eventType));
   }
 }

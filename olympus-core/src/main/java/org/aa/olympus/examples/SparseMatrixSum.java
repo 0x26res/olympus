@@ -1,9 +1,9 @@
-package org.aa.olympus.example;
+package org.aa.olympus.examples;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import java.time.LocalDateTime;
+import com.google.common.reflect.TypeToken;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -12,69 +12,36 @@ import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.Engine;
-import org.aa.olympus.api.EngineBuilder;
 import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.EventChannel;
 import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.SubscriptionType;
 import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
 import org.aa.olympus.impl.UnsupportedEntityException;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
 
 public class SparseMatrixSum {
 
-  private static final EntityKey<Position, Integer> CELL =
+  static final EventChannel<KeyValuePair<Position, Integer>> UPDATE_CHANNEL =
+      Olympus.channel("UPDATE", new TypeToken<KeyValuePair<Position, Integer>>() {});
+
+  static final EntityKey<Position, Integer> CELL =
       Olympus.key("CELL", Position.class, Integer.class);
-  private static final EntityKey<Position, Integer> AGGREGATE =
+  static final EntityKey<Position, Integer> AGGREGATE =
       Olympus.key("AGGREGATE", Position.class, Integer.class);
-  private static final EntityKey<Position, Integer> TOTAL =
+  static final EntityKey<Position, Integer> TOTAL =
       Olympus.key("TOTAL", Position.class, Integer.class);
 
-  private static final Position ROOT = new Position(-1, -1);
+  static final Position ROOT = new Position(-1, -1);
 
-  private Engine engine;
-
-  @Before
-  public void setUp() {
-    EngineBuilder builder = Olympus.builder();
-    builder.registerSource(CELL);
-
-    builder.registerInnerEntity(AGGREGATE, new AggregateManager(), ImmutableSet.of(CELL));
-    builder.registerInnerEntity(TOTAL, new TotalManager(), ImmutableSet.of(AGGREGATE));
-
-    engine = builder.build();
-  }
-
-  @Test
-  public void test() {
-
-    engine.setSourceState(CELL, Position.of(0, 0), 10);
-    engine.setSourceState(CELL, Position.of(0, 1), 11);
-    engine.setSourceState(CELL, Position.of(0, 2), 12);
-
-    engine.setSourceState(CELL, Position.of(1, 0), 100);
-    engine.setSourceState(CELL, Position.of(2, 0), 110);
-    engine.setSourceState(CELL, Position.of(3, 0), 120);
-
-    engine.runOnce(LocalDateTime.now());
-    Assert.assertEquals(363, engine.getState(TOTAL, Position.of(-1, -1)).intValue());
-
-    engine.setSourceState(CELL, Position.of(3, 0), 130);
-    engine.runOnce(LocalDateTime.now());
-    Assert.assertEquals(373, engine.getState(TOTAL, Position.of(-1, -1)).intValue());
-
-    engine.setSourceState(CELL, Position.of(3, 0), 0);
-    engine.runOnce(LocalDateTime.now());
-    Assert.assertEquals(243, engine.getState(TOTAL, Position.of(-1, -1)).intValue());
-
-    engine.setSourceState(CELL, Position.of(200, 23), 120);
-    engine.runOnce(LocalDateTime.now());
-    Assert.assertEquals(363, engine.getState(TOTAL, Position.of(-1, -1)).intValue());
-    Assert.assertEquals(120, engine.getState(AGGREGATE, Position.of(200, -1)).intValue());
-    Assert.assertEquals(120, engine.getState(AGGREGATE, Position.of(-1, 23)).intValue());
+  static Engine createEngine() {
+    return Olympus.builder()
+        .registerEventChannel(UPDATE_CHANNEL)
+        .eventToEntity(UPDATE_CHANNEL, CELL, KeyValuePair::getKey, KeyValuePair::getValue)
+        .registerInnerEntity(AGGREGATE, new AggregateManager(), ImmutableSet.of(CELL))
+        .registerInnerEntity(TOTAL, new TotalManager(), ImmutableSet.of(AGGREGATE))
+        .build();
   }
 
   public static final class Position {

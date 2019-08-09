@@ -1,22 +1,19 @@
 package org.aa.olympus.api;
 
 import java.util.Set;
+import java.util.function.Function;
 
 /** Utility to set up and build a {@link Engine} */
 public interface EngineBuilder {
 
   /**
-   * Register a source entity.
+   * Register an event channel.
    *
-   * <p>A source entity is an entity whose keys & state are managed externally, between update
-   * cycles. The user controls the keys and state of these entities manually.
+   * <p>An event channel is how outside events come inside the engine
    *
-   * @param key Key of the source entity
-   * @param <K> The type of the keys for each element
-   * @param <S> The type of the state of each element
-   * @return {@code this}
+   * @param <E> the type of the event
    */
-  <K, S> EngineBuilder registerSource(EntityKey<K, S> key);
+  <E> EngineBuilder registerEventChannel(EventChannel<E> key);
 
   /**
    * Register an inner entity.
@@ -28,10 +25,20 @@ public interface EngineBuilder {
    *
    * @param key Key of the inner entity
    * @param manager Manager for the entity (manages the creation and notification of elements
-   * @param dependencies kyes of the upstream entities the inner entity is interested in
+   * @param dependencies keys of the upstream entities the inner entity is interested in
+   * @param channels channels of the outside events
    * @param <K> The type of the key for each element
    * @param <S> The type of the state for each
    * @return {@code this}
+   */
+  <K, S> EngineBuilder registerInnerEntity(
+      EntityKey<K, S> key,
+      ElementManager<K, S> manager,
+      Set<EntityKey> dependencies,
+      Set<EventChannel> channels);
+
+  /**
+   * @See {@link #registerInnerEntity(EntityKey, ElementManager, Set, Set)}
    */
   <K, S> EngineBuilder registerInnerEntity(
       EntityKey<K, S> key, ElementManager<K, S> manager, Set<EntityKey> dependencies);
@@ -40,5 +47,25 @@ public interface EngineBuilder {
   <K, S> EngineBuilder registerSimpleEntity(
       EntityKey<K, S> key, SimpleElementManager<K, S> manager, Set<EntityKey<K, ?>> dependencies);
 
+  <E, K, S> EngineBuilder eventToEntity(
+      EventChannel<E> eventChannel,
+      EntityKey<K, S> entityKey,
+      Function<E, K> keyExtractor,
+      Function<E, S> stateExtractor);
+
+  /**
+   * Convenience function to apply custom engine transformation while keeping a functional/flowing
+   * API
+   *
+   * @param transformer a transformer to apply to the builder
+   * @return {@code this}
+   */
+  EngineBuilder pipe(Function<EngineBuilder, EngineBuilder> transformer);
+
+  /**
+   * Assemble the engine into it's runtime implementation
+   *
+   * @return a built {@link Engine}
+   */
   Engine build();
 }

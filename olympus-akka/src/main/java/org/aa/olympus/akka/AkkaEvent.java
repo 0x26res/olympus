@@ -1,27 +1,21 @@
 package org.aa.olympus.akka;
 
-import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.EventChannel;
 
-final class AkkaEvent<K, S> {
-  private final EntityKey<K, S> entityKey;
-  private final K key;
-  private final S state;
+final class AkkaEvent<E> {
+  private final EventChannel<E> channel;
+  private final E value;
 
-  AkkaEvent(EntityKey<K, S> entityKey, K key, S state) {
-    this.entityKey = entityKey;
-    this.key = key;
-    this.state = state;
+  public AkkaEvent(EventChannel<E> channel, E value) {
+    this.channel = channel;
+    this.value = value;
   }
 
-  EntityKey<K, S> getEntityKey() {
-    return entityKey;
+  public EventChannel<E> getChannel() {
+    return channel;
   }
 
-  K getKey() {
-    return key;
-  }
-
-  S getState() {
-    return state;
+  public E getValue() {
+    return value;
   }
 }

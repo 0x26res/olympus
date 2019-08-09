@@ -1,6 +1,7 @@
-package org.aa.olympus.example;
+package org.aa.olympus.impl;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.TypeToken;
 import java.util.function.Consumer;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementManager;
@@ -8,16 +9,27 @@ import org.aa.olympus.api.ElementStatus;
 import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.EventChannel;
 import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.SubscriptionType;
 import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
+import org.aa.olympus.examples.KeyValuePair;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class SubscriptionTypeExample {
+public class SubscriptionTypeTest {
+
+  private static final EventChannel<KeyValuePair<String, String>> MANDATORY_CHANNEL =
+      Olympus.channel("MANDATORY", new TypeToken<KeyValuePair<String, String>>() {});
+
+  private static final EventChannel<KeyValuePair<String, String>> OPTIONAL_CHANNEL =
+      Olympus.channel("OPTIONAL", new TypeToken<KeyValuePair<String, String>>() {});
+
+  private static final EventChannel<KeyValuePair<String, String>> WEAK_CHANNEL =
+      Olympus.channel("WEAK", new TypeToken<KeyValuePair<String, String>>() {});
 
   private static final EntityKey<String, String> MANDATORY_INPUT =
       Olympus.key("MANDATORY_INPUT", String.class, String.class);
@@ -42,25 +54,34 @@ public class SubscriptionTypeExample {
   public void setUp() {
     engine =
         Olympus.builder()
-            .registerSource(MANDATORY_INPUT)
+            .registerEventChannel(MANDATORY_CHANNEL)
+            .eventToEntity(
+                MANDATORY_CHANNEL, MANDATORY_INPUT, KeyValuePair::getKey, KeyValuePair::getValue)
             .registerInnerEntity(
                 MANDATORY, new FailOn42Manager(MANDATORY_INPUT), ImmutableSet.of(MANDATORY_INPUT))
-            .registerSource(OPTIONAL_INPUT)
+            .registerEventChannel(OPTIONAL_CHANNEL)
+            .eventToEntity(
+                OPTIONAL_CHANNEL, OPTIONAL_INPUT, KeyValuePair::getKey, KeyValuePair::getValue)
             .registerInnerEntity(
                 OPTIONAL, new FailOn42Manager(OPTIONAL_INPUT), ImmutableSet.of(OPTIONAL_INPUT))
-            .registerSource(WEAK_INPUT)
+            .registerEventChannel(WEAK_CHANNEL)
+            .eventToEntity(WEAK_CHANNEL, WEAK_INPUT, KeyValuePair::getKey, KeyValuePair::getValue)
             .registerInnerEntity(WEAK, new FailOn42Manager(WEAK_INPUT), ImmutableSet.of(WEAK_INPUT))
             .registerInnerEntity(
                 RESULT, new MyElementManger(), ImmutableSet.of(MANDATORY, WEAK, OPTIONAL))
             .build();
   }
 
+  private void set(EventChannel<KeyValuePair<String, String>> channel, String key, String value) {
+    engine.injectEvent(channel, KeyValuePair.of(key, value));
+  }
+
   @Test
   public void testAllReady() {
 
-    engine.setSourceState(MANDATORY_INPUT, "foo", "FOO");
-    engine.setSourceState(OPTIONAL_INPUT, "foo", "FOO");
-    engine.setSourceState(WEAK_INPUT, "foo", "FOO");
+    set(MANDATORY_CHANNEL, "foo", "FOO");
+    set(OPTIONAL_CHANNEL, "foo", "FOO");
+    set(WEAK_CHANNEL, "foo", "FOO");
     engine.runOnce();
     Assert.assertEquals("FOO/FOO/FOO", engine.getState(RESULT, "foo"));
   }
@@ -68,14 +89,14 @@ public class SubscriptionTypeExample {
   @Test
   public void testMandatoryReady() {
 
-    engine.setSourceState(MANDATORY_INPUT, "foo", "FOO");
+    set(MANDATORY_CHANNEL, "foo", "FOO");
     engine.runOnce();
     Assert.assertEquals("FOO/no value/no value", engine.getState(RESULT, "foo"));
   }
 
   @Test
   public void testWeakReady() {
-    engine.setSourceState(WEAK_INPUT, "foo", "FOO");
+    set(WEAK_CHANNEL, "foo", "FOO");
     engine.runOnce();
     Assert.assertNull(engine.getState(RESULT, "foo"));
     Assert.assertEquals(ElementStatus.NOT_READY, engine.getElement(RESULT, "foo").getStatus());
@@ -90,20 +111,20 @@ public class SubscriptionTypeExample {
   @Test
   public void testWithFailures() {
     // Mandatory missing, weak error
-    engine.setSourceState(WEAK_INPUT, "foo", "42");
+    set(WEAK_CHANNEL, "foo", "42");
     engine.runOnce();
     Assert.assertEquals(ElementStatus.ERROR, engine.getElement(WEAK, "foo").getStatus());
     Assert.assertEquals(ElementStatus.NOT_READY, engine.getElement(RESULT, "foo").getStatus());
     Assert.assertEquals(1, engine.getElement(RESULT, "foo").getUpdateContext().getUpdateId());
     // Mandatory present, weak error
-    engine.setSourceState(MANDATORY_INPUT, "foo", "foo");
+    set(MANDATORY_CHANNEL, "foo", "foo");
     engine.runOnce();
     Assert.assertEquals(ElementStatus.ERROR, engine.getElement(WEAK, "foo").getStatus());
     Assert.assertEquals(ElementStatus.OK, engine.getElement(RESULT, "foo").getStatus());
     Assert.assertEquals("foo/no value/no value", engine.getElement(RESULT, "foo").getState());
     Assert.assertEquals(2, engine.getElement(RESULT, "foo").getUpdateContext().getUpdateId());
     // Mandatory present, weak present
-    engine.setSourceState(WEAK_INPUT, "foo", "FOO");
+    set(WEAK_CHANNEL, "foo", "FOO");
     engine.runOnce();
     Assert.assertEquals(ElementStatus.OK, engine.getElement(WEAK, "foo").getStatus());
     Assert.assertEquals(ElementStatus.OK, engine.getElement(MANDATORY, "foo").getStatus());
@@ -114,7 +135,7 @@ public class SubscriptionTypeExample {
         "foo/no value/no value",
         engine.getElement(RESULT, "foo").getState());
     // Mandatory present, weak present + TICK
-    engine.setSourceState(MANDATORY_INPUT, "foo", "FOO1");
+    set(MANDATORY_CHANNEL, "foo", "FOO1");
     engine.runOnce();
     Assert.assertEquals(4, engine.getElement(RESULT, "foo").getUpdateContext().getUpdateId());
     Assert.assertEquals(
@@ -122,28 +143,28 @@ public class SubscriptionTypeExample {
         "FOO1/no value/FOO",
         engine.getElement(RESULT, "foo").getState());
     // Mandatory fails, Weak present
-    engine.setSourceState(MANDATORY_INPUT, "foo", "42");
+    set(MANDATORY_CHANNEL, "foo", "42");
     engine.runOnce();
     Assert.assertEquals(ElementStatus.OK, engine.getElement(WEAK, "foo").getStatus());
     Assert.assertEquals(ElementStatus.ERROR, engine.getElement(MANDATORY, "foo").getStatus());
     Assert.assertEquals(ElementStatus.UPSTREAM_ERROR, engine.getElement(RESULT, "foo").getStatus());
     Assert.assertNull(engine.getElement(RESULT, "foo").getState());
     // Mandatory OK, Weak present, Optional Present
-    engine.setSourceState(MANDATORY_INPUT, "foo", "FOO");
-    engine.setSourceState(OPTIONAL_INPUT, "foo", "FOO");
+    set(MANDATORY_CHANNEL, "foo", "FOO");
+    set(OPTIONAL_CHANNEL, "foo", "FOO");
     engine.runOnce();
     Assert.assertEquals(ElementStatus.OK, engine.getElement(WEAK, "foo").getStatus());
     Assert.assertEquals(ElementStatus.OK, engine.getElement(MANDATORY, "foo").getStatus());
     Assert.assertEquals(ElementStatus.OK, engine.getElement(RESULT, "foo").getStatus());
     Assert.assertEquals("FOO/FOO/FOO", engine.getElement(RESULT, "foo").getState());
     // Optional fails
-    engine.setSourceState(OPTIONAL_INPUT, "foo", "42");
+    set(OPTIONAL_CHANNEL, "foo", "42");
     engine.runOnce();
     Assert.assertEquals(ElementStatus.ERROR, engine.getElement(OPTIONAL, "foo").getStatus());
     Assert.assertEquals("FOO/no value/FOO", engine.getElement(RESULT, "foo").getState());
     // Weak and Optional update, so everything updates
-    engine.setSourceState(OPTIONAL_INPUT, "foo", "foo");
-    engine.setSourceState(WEAK_INPUT, "foo", "foo");
+    set(OPTIONAL_CHANNEL, "foo", "foo");
+    set(WEAK_CHANNEL, "foo", "foo");
     engine.runOnce();
     Assert.assertEquals(ElementStatus.OK, engine.getElement(OPTIONAL, "foo").getStatus());
     Assert.assertEquals("FOO/foo/foo", engine.getElement(RESULT, "foo").getState());
