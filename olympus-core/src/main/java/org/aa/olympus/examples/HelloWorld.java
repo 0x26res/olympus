@@ -1,7 +1,6 @@
 package org.aa.olympus.examples;
 
 import com.google.common.collect.ImmutableSet;
-import java.util.function.Consumer;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementUpdater;
@@ -9,6 +8,7 @@ import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.Event;
 import org.aa.olympus.api.EventChannel;
+import org.aa.olympus.api.Notifier;
 import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
@@ -83,13 +83,13 @@ public class HelloWorld {
     }
 
     @Override
-    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<String> toNotify) {
-      toNotify.accept((String) key);
+    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Notifier<String> notifier) {
+      notifier.notifyElement((String) key);
     }
 
     @Override
-    public <E> void onEvent(Event<E> event, Consumer<String> toNotify) {
-      toNotify.accept(((Message) event.getValue()).key);
+    public <E> void onEvent(Event<E> event, Notifier<String> notifier) {
+      notifier.notifyElement(((Message) event.getValue()).key);
     }
   }
 

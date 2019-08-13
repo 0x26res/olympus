@@ -1,7 +1,6 @@
 package org.aa.olympus.impl;
 
 import com.google.common.base.Preconditions;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementManager;
@@ -9,6 +8,7 @@ import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.Event;
 import org.aa.olympus.api.EventChannel;
+import org.aa.olympus.api.Notifier;
 import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
@@ -31,13 +31,13 @@ public final class ChannelElementManager<E, K, S> implements ElementManager<K, S
   }
 
   @Override
-  public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<K> toNotify) {}
+  public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Notifier<K> toNotify) {}
 
   @Override
-  public <E2> void onEvent(Event<E2> event, Consumer<K> toNotify) {
+  public <E2> void onEvent(Event<E2> event, Notifier<K> notifier) {
     E castedEvent = eventChannel.castEvent(event);
     K key = keyExtractor.apply(castedEvent);
-    toNotify.accept(key);
+    notifier.notifyElement(key);
   }
 
   private static final class ChannelElementUpdater<E, K, S> implements ElementUpdater<S> {

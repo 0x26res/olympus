@@ -14,5 +14,8 @@ public interface Toolbox {
   @Beta
   List<Event> getEvents();
 
+  @Beta
+  <E> List<E> getEvents(EventChannel<E> channel);
+
   ElementTimer setTimer(LocalDateTime timerAt);
 }

@@ -7,13 +7,13 @@ import com.google.common.reflect.TypeToken;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.EventChannel;
+import org.aa.olympus.api.Notifier;
 import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.SubscriptionType;
 import org.aa.olympus.api.Toolbox;
@@ -88,14 +88,14 @@ public class SparseMatrixSum {
     }
 
     @Override
-    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<Position> toNotify) {
+    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Notifier<Position> toNotify) {
 
       if (entityKey.equals(CELL)) {
         Position position = (Position) key;
-        toNotify.accept(new Position(-1, position.col));
-        toNotify.accept(new Position(position.row, -1));
+        toNotify.notifyElement(new Position(-1, position.col));
+        toNotify.notifyElement(new Position(position.row, -1));
       } else if (entityKey.equals(AGGREGATE)) {
-        toNotify.accept(ROOT);
+        toNotify.notifyElement(ROOT);
       } else {
         throw new UnsupportedEntityException(entityKey);
       }
@@ -112,10 +112,11 @@ public class SparseMatrixSum {
     }
 
     @Override
-    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<Position> toNotify) {
+    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Notifier<Position> notifier) {
+
       Position position = (Position) key;
       if (position.row == -1) {
-        toNotify.accept(ROOT);
+        notifier.notifyElement(ROOT);
       }
     }
   }

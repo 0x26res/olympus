@@ -4,10 +4,12 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementTimer;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.Event;
+import org.aa.olympus.api.EventChannel;
 import org.aa.olympus.api.Toolbox;
 
 // TODO: One toolbox per ElementUnit
@@ -50,6 +52,14 @@ public class ToolboxImpl implements Toolbox {
   @Override
   public List<Event> getEvents() {
     return events;
+  }
+
+  @Override
+  public <E> List<E> getEvents(EventChannel<E> channel) {
+    return events.stream()
+        .filter(e -> e.getChannel().equals(channel))
+        .map(channel::castEvent)
+        .collect(Collectors.toList());
   }
 
   @Override

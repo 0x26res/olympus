@@ -1,9 +1,9 @@
 package org.aa.olympus.impl;
 
-import java.util.function.Consumer;
 import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.EntityKey;
+import org.aa.olympus.api.Notifier;
 import org.aa.olympus.api.SimpleElementManager;
 import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
@@ -24,7 +24,7 @@ public final class SimpleElementManagerAdapter<K, S> implements ElementManager<K
   }
 
   @Override
-  public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<K> toNotify) {
-    toNotify.accept(((K) key));
+  public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Notifier<K> notifier) {
+    notifier.notifyElement(((K) key));
   }
 }

@@ -1,7 +1,6 @@
 package org.aa.olympus.examples;
 
 import com.google.common.collect.ImmutableSet;
-import java.util.function.Consumer;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementUpdater;
@@ -9,18 +8,20 @@ import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.Event;
 import org.aa.olympus.api.EventChannel;
+import org.aa.olympus.api.Notifier;
 import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.Toolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
 
-public class SimplestExample {
+public class WorldCountExample {
 
-  static final EntityKey<String, Integer> COUNTER =
+  public static final EntityKey<String, Integer> COUNTER =
       Olympus.key("COUNTER", String.class, Integer.class);
-  static final EventChannel<String> WORDS = Olympus.channel("WORDS", String.class);
+  // TODO: add total
+  public static final EventChannel<String> WORDS = Olympus.channel("WORDS", String.class);
 
-  static final class CounterElementManager implements ElementManager<String, Integer> {
+  public static class CounterElementManager implements ElementManager<String, Integer> {
 
     @Override
     public ElementUpdater<Integer> create(
@@ -43,19 +44,19 @@ public class SimplestExample {
     }
 
     @Override
-    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<String> toNotify) {
+    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Notifier<String> notifier) {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public <E> void onEvent(Event<E> event, Consumer<String> toNotify) {
+    public <E> void onEvent(Event<E> event, Notifier<String> notifier) {
       if (event.getChannel().equals(WORDS)) {
-        toNotify.accept((String) event.getValue());
+        notifier.notifyElement((String) event.getValue());
       }
     }
   }
 
-  static Engine createEngine() {
+  public static Engine createEngine() {
     return Olympus.builder()
         .registerEventChannel(WORDS)
         .registerInnerEntity(

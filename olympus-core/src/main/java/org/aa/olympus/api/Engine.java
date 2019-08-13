@@ -6,7 +6,7 @@ import java.util.List;
 /** Holds an instance of the engine */
 public interface Engine {
 
-  <E> void injectEvent(EventChannel<E> channel, E event);
+  <E> Engine injectEvent(EventChannel<E> channel, E event);
 
   /** Run the engine once, processing all updates */
   void runOnce(LocalDateTime time);

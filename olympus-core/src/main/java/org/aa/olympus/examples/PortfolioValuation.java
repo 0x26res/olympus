@@ -1,13 +1,13 @@
 package org.aa.olympus.examples;
 
 import com.google.common.collect.ImmutableSet;
-import java.util.function.Consumer;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.EventChannel;
+import org.aa.olympus.api.Notifier;
 import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.SubscriptionType;
 import org.aa.olympus.api.Toolbox;
@@ -84,8 +84,8 @@ public class PortfolioValuation {
     }
 
     @Override
-    public void onNewKey(EntityKey entityKey, Object key, Consumer toNotify) {
-      toNotify.accept((String) key);
+    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Notifier<String> notifier) {
+      notifier.notifyElement((String) key);
     }
   }
 

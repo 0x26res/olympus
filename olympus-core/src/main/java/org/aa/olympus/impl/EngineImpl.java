@@ -6,17 +6,14 @@ import com.google.common.collect.ImmutableMap;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
 import org.aa.olympus.api.ElementView;
 import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.Event;
 import org.aa.olympus.api.EventChannel;
+import org.aa.olympus.api.Notifier;
 import org.aa.olympus.api.UpdateContext;
 
 // TODO: consider adding an extra layer of abstraction to run the engine
@@ -89,6 +86,11 @@ final class EngineImpl implements Engine {
       EntityManager<?, ?> entityManager = entities.get(entityKey);
       propagateCreations(entityManager);
     }
+
+    for (EntityKey entityKey : sorted) {
+      EntityManager<?, ?> entityManager = entities.get(entityKey);
+      entityManager.flushCreations();
+    }
   }
 
   private <K, S> void propagateCreations(EntityManager<K, S> entityManager) {
@@ -101,22 +103,24 @@ final class EngineImpl implements Engine {
   private <KB, SB, KS, SS> void propagateCreations(
       EntityManager<KB, SB> broadcasters, EntityManager<KS, SS> subscribers) {
 
-    HashMap<KS, Set<ElementUnit<KB, SB>>> toNotify = new HashMap<>();
-    List<ElementUnit<KB, SB>> handles = broadcasters.getCreated();
-    for (ElementUnit<KB, SB> elementUnit : handles) {
-      Consumer<KS> consumer =
-          p -> toNotify.computeIfAbsent(p, k -> new HashSet<>()).add(elementUnit);
+    List<ElementUnit<KB, SB>> createdUnits = broadcasters.getCreated();
+    for (ElementUnit<KB, SB> createdUnit : createdUnits) {
+      Notifier<KS> notifier =
+          new Notifier<KS>() {
+            @Override
+            public void notifyElement(KS elementKey) {
+              // TODO: this is two heavy for a callback
+              subscribers.get(elementKey, true).queueCreation(createdUnit);
+            }
+
+            @Override
+            public void notifyAllElements() {
+              subscribers.queueCreation(createdUnit);
+            }
+          };
       subscribers
           .getElementManager()
-          .onNewKey(broadcasters.getKey(), elementUnit.getKey(), consumer);
-    }
-
-    for (Map.Entry<KS, Set<ElementUnit<KB, SB>>> entry : toNotify.entrySet()) {
-      ElementUnit<KS, SS> subscriber = subscribers.get(entry.getKey(), true);
-      for (ElementUnit<KB, SB> broadcaster : entry.getValue()) {
-        subscriber.onNewElement(broadcaster.createHandleAdapter(subscriber));
-        subscriber.stain();
-      }
+          .onNewKey(broadcasters.getKey(), createdUnit.getKey(), notifier);
     }
   }
 
@@ -183,12 +187,13 @@ final class EngineImpl implements Engine {
   }
 
   @Override
-  public <E> void injectEvent(EventChannel<E> channel, E event) {
+  public <E> Engine injectEvent(EventChannel<E> channel, E event) {
     Preconditions.checkArgument(
         channelToEntities.containsKey(channel),
         "%s is not subscribed to %s",
         channel,
         channelToEntities.keySet());
     this.pendingEvents.add(new EventImpl<>(channel, event));
+    return this;
   }
 }

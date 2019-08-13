@@ -2,7 +2,6 @@ package org.aa.olympus.impl;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
-import java.util.function.Consumer;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementStatus;
@@ -10,6 +9,7 @@ import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.EventChannel;
+import org.aa.olympus.api.Notifier;
 import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.SubscriptionType;
 import org.aa.olympus.api.Toolbox;
@@ -208,8 +208,8 @@ public class SubscriptionTypeTest {
     }
 
     @Override
-    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<String> toNotify) {
-      toNotify.accept((String) key);
+    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Notifier<String> notifier) {
+      notifier.notifyElement((String) key);
     }
   }
 
@@ -251,8 +251,8 @@ public class SubscriptionTypeTest {
     }
 
     @Override
-    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<String> toNotify) {
-      toNotify.accept((String) key);
+    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Notifier<String> notifier) {
+      notifier.notifyElement((String) key);
     }
   }
 }

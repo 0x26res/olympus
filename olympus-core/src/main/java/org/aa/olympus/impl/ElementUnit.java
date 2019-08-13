@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -33,7 +34,8 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
   private S state;
   private int notifications;
   private UpdateContext updateContext = UpdateContextImpl.NONE;
-  private List<Event> pendingEvents = new ArrayList<>();
+  private final List<Event> pendingEvents = new ArrayList<>();
+  private final LinkedHashSet<ElementUnit> pendingCreations = new LinkedHashSet<>();
   private ToolboxImpl toolbox;
 
   ElementUnit(
@@ -242,5 +244,16 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
   public <E> void queueEvent(Event<E> event) {
     pendingEvents.add(event);
     ++notifications;
+  }
+
+  public void queueCreation(ElementUnit unit) {
+    pendingCreations.add(unit);
+  }
+
+  public void flushCreations() {
+    for (ElementUnit creation : pendingCreations) {
+      this.onNewElement(new ElementHandleAdapter<>(creation, this));
+    }
+    pendingCreations.clear();
   }
 }

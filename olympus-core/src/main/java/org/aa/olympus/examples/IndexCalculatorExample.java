@@ -7,7 +7,6 @@ import com.google.common.reflect.TypeToken;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementUpdater;
@@ -15,6 +14,7 @@ import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EngineBuilder;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.EventChannel;
+import org.aa.olympus.api.Notifier;
 import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.SubscriptionType;
 import org.aa.olympus.api.Toolbox;
@@ -59,10 +59,10 @@ public class IndexCalculatorExample {
     }
 
     @Override
-    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<String> toNotify) {
+    public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Notifier<String> notifier) {
 
       if (entityKey.equals(COMPOSITION)) {
-        toNotify.accept((String) key);
+        notifier.notifyElement((String) key);
       }
     }
   }

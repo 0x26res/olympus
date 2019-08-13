@@ -11,6 +11,7 @@
   <modules>
     <module>olympus-akka</module>
     <module>olympus-core</module>
+    <module>olympus-test</module>
   </modules>
   <name>olympus</name>
 

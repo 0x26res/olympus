@@ -10,33 +10,33 @@ public class SimplesExampleTest {
   @Test
   public void simpleTest() {
 
-    Engine engine = SimplestExample.createEngine();
-    engine.injectEvent(SimplestExample.WORDS, "HELLO");
-    engine.injectEvent(SimplestExample.WORDS, "HELLO");
-    engine.injectEvent(SimplestExample.WORDS, "HELLO");
-    engine.injectEvent(SimplestExample.WORDS, "WORLD");
-    engine.injectEvent(SimplestExample.WORDS, "WORLD");
+    Engine engine = WorldCountExample.createEngine();
+    engine.injectEvent(WorldCountExample.WORDS, "HELLO");
+    engine.injectEvent(WorldCountExample.WORDS, "HELLO");
+    engine.injectEvent(WorldCountExample.WORDS, "HELLO");
+    engine.injectEvent(WorldCountExample.WORDS, "WORLD");
+    engine.injectEvent(WorldCountExample.WORDS, "WORLD");
 
     engine.runOnce();
 
     OlympusAssert.assertElement(
-        engine.getElement(SimplestExample.COUNTER, "HELLO"), ElementStatus.OK, 3, 1);
+        engine.getElement(WorldCountExample.COUNTER, "HELLO"), ElementStatus.OK, 3, 1);
     OlympusAssert.assertElement(
-        engine.getElement(SimplestExample.COUNTER, "WORLD"), ElementStatus.OK, 2, 1);
+        engine.getElement(WorldCountExample.COUNTER, "WORLD"), ElementStatus.OK, 2, 1);
 
     engine.runOnce();
 
     OlympusAssert.assertElement(
-        engine.getElement(SimplestExample.COUNTER, "HELLO"), ElementStatus.OK, 3, 1);
+        engine.getElement(WorldCountExample.COUNTER, "HELLO"), ElementStatus.OK, 3, 1);
     OlympusAssert.assertElement(
-        engine.getElement(SimplestExample.COUNTER, "WORLD"), ElementStatus.OK, 2, 1);
+        engine.getElement(WorldCountExample.COUNTER, "WORLD"), ElementStatus.OK, 2, 1);
 
-    engine.injectEvent(SimplestExample.WORDS, "WORLD");
+    engine.injectEvent(WorldCountExample.WORDS, "WORLD");
     engine.runOnce();
 
     OlympusAssert.assertElement(
-        engine.getElement(SimplestExample.COUNTER, "HELLO"), ElementStatus.OK, 3, 1);
+        engine.getElement(WorldCountExample.COUNTER, "HELLO"), ElementStatus.OK, 3, 1);
     OlympusAssert.assertElement(
-        engine.getElement(SimplestExample.COUNTER, "WORLD"), ElementStatus.OK, 3, 3);
+        engine.getElement(WorldCountExample.COUNTER, "WORLD"), ElementStatus.OK, 3, 3);
   }
 }
