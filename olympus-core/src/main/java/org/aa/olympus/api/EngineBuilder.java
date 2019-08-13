@@ -37,9 +37,7 @@ public interface EngineBuilder {
       Set<EntityKey> dependencies,
       Set<EventChannel> channels);
 
-  /**
-   * @See {@link #registerInnerEntity(EntityKey, ElementManager, Set, Set)}
-   */
+  /** @See {@link #registerInnerEntity(EntityKey, ElementManager, Set, Set)} */
   <K, S> EngineBuilder registerInnerEntity(
       EntityKey<K, S> key, ElementManager<K, S> manager, Set<EntityKey> dependencies);
 

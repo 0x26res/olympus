@@ -19,6 +19,7 @@ import org.aa.olympus.api.EventChannel;
 final class EntityManager<K, S> {
 
   private final EngineContext engineContext;
+  private final TimerStore timerStore;
   private final EntityKey<K, S> key;
   private final ElementManager<K, S> elementManager;
   private final ImmutableMap<EntityKey, EntityManager> dependencies;
@@ -29,12 +30,14 @@ final class EntityManager<K, S> {
 
   EntityManager(
       EngineContext engineContext,
+      TimerStore timerStore,
       EntityKey<K, S> key,
       ElementManager<K, S> elementManager,
       Map<EntityKey, EntityManager> dependencies,
       Set<EntityKey> dependents,
       Set<EventChannel> eventChannels) {
     this.engineContext = engineContext;
+    this.timerStore = timerStore;
     this.key = key;
     this.elementManager = elementManager;
     this.dependencies = ImmutableMap.copyOf(dependencies);
@@ -61,7 +64,7 @@ final class EntityManager<K, S> {
   ElementUnit<K, S> get(K key, boolean createUpdater) {
     ElementUnit<K, S> unit = units.get(key);
     if (unit == null) {
-      unit = new ElementUnit<>(engineContext, this.key, key, dependencies);
+      unit = new ElementUnit<>(engineContext, timerStore, this.key, key, dependencies);
       units.put(key, unit);
     }
     if (unit.getStatus() == ElementStatus.SHADOW && createUpdater) {

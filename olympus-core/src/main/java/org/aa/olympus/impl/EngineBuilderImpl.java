@@ -138,11 +138,12 @@ public final class EngineBuilderImpl implements EngineBuilder {
 
     EntityManager<K, S> createManager(
         EngineContext engineContext,
+        TimerStore timerStore,
         Map<EntityKey, EntityManager> dependencies,
         Set<EntityKey> dependents) {
       Preconditions.checkArgument(dependencies.keySet().equals(this.dependencies));
       return new EntityManager<>(
-          engineContext, entityKey, elementManager, dependencies, dependents, channels);
+          engineContext, timerStore, entityKey, elementManager, dependencies, dependents, channels);
     }
 
     public EntityKey<K, S> getEntityKey() {

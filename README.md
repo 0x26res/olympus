@@ -52,10 +52,15 @@ Each `element` belongs to an `entity`.
 Each `entity` defines how elements are created and which element gets notified or created when new elements are added to the engine.
 It also has to declare which other entities they depend on. 
 
-### Source
+### Event
 
-A special `entity` whose `elements` states are updated by external event.
+An external update coming inside the engine. 
 
+### Event Channel
+
+A channel on which events are published. Each Entity decides which channels they listen to. 
+Upon receiving an event, entities dispatch it to relevant Elements. 
+Elements can then iterate through events to update their states or (un)subscribe to other elements 
 
 # Example
 
@@ -65,11 +70,11 @@ In this example we receive stock prices and index composition in real time.
 As stock prices and index compositions change, we update the indices values.
 
 The S&P500 valuation calculator subscribes to:
-* prices of the stocks in its composition. S&P500 subscribes  to Ford, Google etc. 
-* its composition.  
+* prices of the stocks in its composition: Ford, Google etc 
+* its composition  
 
-When a price update, it gets notified and recalculate the index value accordingly.
-When its composition updates, it can subscribe/unsubscribe to the relevant prices. Subscriptions can be updated dynamically are run time.
+When a price updates, the valuation calculator for S&P500 gets notified and recalculate the index value accordingly.
+When its composition updates, it can subscribe/unsubscribe to the relevant prices. Subscriptions can be updated dynamically at run time.
 
 Some key advantages of the olympus engine is that:
 * Emphasis on stateful elements: index calculator rely on the state of each price, rather than receiving price change events when a price change. This mean they don't have to maintain a map with with the current value of each stock.

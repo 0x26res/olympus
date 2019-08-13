@@ -23,6 +23,7 @@ import org.aa.olympus.api.UpdateContext;
 final class EngineImpl implements Engine {
 
   private final EngineContext engineContext;
+  private final TimerStore timerStore;
   private final List<EntityKey> sorted;
   private final Map<EntityKey, SourceManager> sources;
   private final Map<EntityKey, EntityManager> entities;
@@ -31,11 +32,13 @@ final class EngineImpl implements Engine {
 
   EngineImpl(
       EngineContext engineContext,
+      TimerStore timerStore,
       List<EntityKey> sorted,
       Map<EntityKey, SourceManager> sources,
       Map<EntityKey, EntityManager> entities,
       Map<EventChannel, List<EntityManager>> channelToEntities) {
     this.engineContext = engineContext;
+    this.timerStore = timerStore;
     this.sorted = sorted;
     this.sources = ImmutableMap.copyOf(sources);
     this.entities = ImmutableMap.copyOf(entities);
@@ -47,6 +50,7 @@ final class EngineImpl implements Engine {
     Preconditions.checkArgument(!time.isBefore(this.engineContext.getLatestContext().getTime()));
     this.engineContext.setLatestContext(
         new UpdateContextImpl(time, this.engineContext.getLatestContext().getUpdateId() + 1));
+    flushTimers();
     propagateEvents();
     propagateCreations();
     propagateUpdates();
@@ -55,6 +59,10 @@ final class EngineImpl implements Engine {
   @Override
   public void runOnce() {
     runOnce(LocalDateTime.now());
+  }
+
+  private void flushTimers() {
+    timerStore.notifyNext(engineContext.getLatestContext().getTime());
   }
 
   private void propagateUpdates() {

@@ -24,6 +24,7 @@ final class EngineAssembler {
   private final EngineBuilderImpl builder;
 
   private EngineContext engineContext;
+  private TimerStore timerStore;
   private Map<EntityKey, Set<EntityKey>> entityToDependencies;
   private Map<EntityKey, Set<EntityKey>> entityToDependents;
   private List<EntityKey> topologicalSort;
@@ -50,17 +51,23 @@ final class EngineAssembler {
 
   EngineImpl assemble() {
     createContext();
+    createTimerStore();
     createDependencies();
     reverseDependencies();
     sort();
     prepareManagers();
     buildEntities();
     mapChannelToEntities();
-    return new EngineImpl(engineContext, topologicalSort, sources, entities, channelToEntities);
+    return new EngineImpl(
+        engineContext, timerStore, topologicalSort, sources, entities, channelToEntities);
   }
 
   private void createContext() {
     engineContext = new EngineContext(LoggerFactory.getLogger(EngineImpl.class.getName()));
+  }
+
+  private void createTimerStore() {
+    timerStore = new TimerStore(engineContext);
   }
 
   private void createDependencies() {
@@ -102,6 +109,7 @@ final class EngineAssembler {
           entity.getEntityKey(),
           entity.createManager(
               engineContext,
+              timerStore,
               getDependenciesManagers((entity.getEntityKey())),
               getDependents(entity.getEntityKey())));
     }

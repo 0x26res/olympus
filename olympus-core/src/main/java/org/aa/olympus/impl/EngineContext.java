@@ -3,7 +3,6 @@ package org.aa.olympus.impl;
 import org.aa.olympus.api.UpdateContext;
 import org.slf4j.Logger;
 
-// TODO: fine a better logger interface
 public final class EngineContext {
 
   private final Logger errorLogger;

@@ -1,6 +1,7 @@
 package org.aa.olympus.api;
 
 import com.google.common.annotations.Beta;
+import java.time.LocalDateTime;
 import java.util.List;
 
 // TODO: rename to ElementToolbox since it's at element level
@@ -12,4 +13,6 @@ public interface Toolbox {
 
   @Beta
   List<Event> getEvents();
+
+  ElementTimer setTimer(LocalDateTime timerAt);
 }

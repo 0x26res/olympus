@@ -2,8 +2,10 @@ package org.aa.olympus.impl;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.aa.olympus.api.ElementHandle;
+import org.aa.olympus.api.ElementTimer;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.Event;
 import org.aa.olympus.api.Toolbox;
@@ -13,12 +15,17 @@ import org.aa.olympus.api.Toolbox;
 // TODO: how to deal with multiple subscriptions
 public class ToolboxImpl implements Toolbox {
 
+  private final TimerStore timerStore;
   private final ImmutableMap<EntityKey, EntityManager> dependencies;
   private final ElementUnit unit;
-  private List<Event> events;
+  private final List<Event> events;
 
   public ToolboxImpl(
-      ImmutableMap<EntityKey, EntityManager> dependencies, ElementUnit unit, List<Event> events) {
+      TimerStore timerStore,
+      ImmutableMap<EntityKey, EntityManager> dependencies,
+      ElementUnit unit,
+      List<Event> events) {
+    this.timerStore = timerStore;
     this.dependencies = dependencies;
     this.unit = unit;
     this.events = events;
@@ -43,5 +50,10 @@ public class ToolboxImpl implements Toolbox {
   @Override
   public List<Event> getEvents() {
     return events;
+  }
+
+  @Override
+  public ElementTimer setTimer(LocalDateTime timerAt) {
+    return timerStore.create(this.unit, timerAt);
   }
 }

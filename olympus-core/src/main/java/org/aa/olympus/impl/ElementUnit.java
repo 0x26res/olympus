@@ -38,6 +38,7 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
 
   ElementUnit(
       EngineContext engineContext,
+      TimerStore timerStore,
       EntityKey<K, S> entityKey,
       K key,
       ImmutableMap<EntityKey, EntityManager> dependencies) {
@@ -45,7 +46,9 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
     this.entityKey = entityKey;
     this.key = key;
     this.updater = null;
-    this.toolbox = new ToolboxImpl(dependencies, this, Collections.unmodifiableList(pendingEvents));
+    this.toolbox =
+        new ToolboxImpl(
+            timerStore, dependencies, this, Collections.unmodifiableList(pendingEvents));
     status = ElementStatus.SHADOW;
   }
 
