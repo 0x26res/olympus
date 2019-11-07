@@ -85,10 +85,6 @@ final class ElementHandleAdapter<K, S> implements ElementHandle<K, S> {
     }
   }
 
-  public void stain() {
-    this.subscriber.stain();
-  }
-
   @Override
   public String toString() {
     return MoreObjects.toStringHelper(ElementHandle.class)
@@ -96,4 +92,14 @@ final class ElementHandleAdapter<K, S> implements ElementHandle<K, S> {
         .add("subscriber", subscriber)
         .toString();
   }
+
+  @Override
+  public Exception getError() {
+    return subscriber.getError();
+  }
+
+  void stain() {
+    subscriber.stain();
+  }
+
 }

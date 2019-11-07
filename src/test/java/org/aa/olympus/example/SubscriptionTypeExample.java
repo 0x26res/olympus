@@ -10,7 +10,7 @@ import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.SubscriptionType;
-import org.aa.olympus.api.Toolbox;
+import org.aa.olympus.api.ELementToolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
 import org.junit.Assert;
@@ -119,14 +119,14 @@ public class SubscriptionTypeExample {
     ElementHandle<String, String> mandatory;
     ElementHandle<String, String> optional;
 
-    MyElementUpdater(String key, Toolbox toolbox) {
-      mandatory = toolbox.get(MANDATORY, key).subscribe(SubscriptionType.STRONG);
-      optional = toolbox.get(OPTIONAL, key).subscribe(SubscriptionType.WEAK);
+    MyElementUpdater(String key, ELementToolbox ELementToolbox) {
+      mandatory = ELementToolbox.get(MANDATORY, key).subscribe(SubscriptionType.STRONG);
+      optional = ELementToolbox.get(OPTIONAL, key).subscribe(SubscriptionType.WEAK);
     }
 
     @Override
     public UpdateResult<String> update(
-        String previous, UpdateContext updateContext, Toolbox toolbox) {
+        String previous, UpdateContext updateContext, ELementToolbox ELementToolbox) {
       return UpdateResult.maybe(
           mandatory.getState() + '/' + optional.getStateOrDefault("no value"));
     }
@@ -141,8 +141,8 @@ public class SubscriptionTypeExample {
   public static class MyElementManger implements ElementManager<String, String> {
 
     @Override
-    public ElementUpdater<String> create(String key, UpdateContext updateContext, Toolbox toolbox) {
-      return new MyElementUpdater(key, toolbox);
+    public ElementUpdater<String> create(String key, UpdateContext updateContext, ELementToolbox ELementToolbox) {
+      return new MyElementUpdater(key, ELementToolbox);
     }
 
     @Override
@@ -155,13 +155,13 @@ public class SubscriptionTypeExample {
 
     private final ElementHandle<String, String> input;
 
-    FailOn42Updater(EntityKey<String, String> sourceEntity, String key, Toolbox toolbox) {
-      input = toolbox.get(sourceEntity, key).subscribe(SubscriptionType.STRONG);
+    FailOn42Updater(EntityKey<String, String> sourceEntity, String key, ELementToolbox ELementToolbox) {
+      input = ELementToolbox.get(sourceEntity, key).subscribe(SubscriptionType.STRONG);
     }
 
     @Override
     public UpdateResult<String> update(
-        String previous, UpdateContext updateContext, Toolbox toolbox) {
+        String previous, UpdateContext updateContext, ELementToolbox ELementToolbox) {
       if (input.getState().equals("42")) {
         throw new IllegalArgumentException("42");
       } else {
@@ -184,8 +184,8 @@ public class SubscriptionTypeExample {
     }
 
     @Override
-    public ElementUpdater<String> create(String key, UpdateContext updateContext, Toolbox toolbox) {
-      return new FailOn42Updater(sourceEntity, key, toolbox);
+    public ElementUpdater<String> create(String key, UpdateContext updateContext, ELementToolbox ELementToolbox) {
+      return new FailOn42Updater(sourceEntity, key, ELementToolbox);
     }
 
     @Override

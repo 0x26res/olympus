@@ -15,7 +15,7 @@ import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EngineBuilder;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.Olympus;
-import org.aa.olympus.api.Toolbox;
+import org.aa.olympus.api.ELementToolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
 import org.aa.olympus.impl.UnsupportedEntityException;
@@ -104,7 +104,7 @@ public class ProductStock {
 
     @Override
     public UpdateResult<Integer> update(
-        Integer previous, UpdateContext updateContext, Toolbox toolbox) {
+        Integer previous, UpdateContext updateContext, ELementToolbox ELementToolbox) {
       return UpdateResult.update(children.stream().mapToInt(ElementHandle::getState).sum());
     }
 
@@ -126,7 +126,7 @@ public class ProductStock {
 
     @Override
     public ElementUpdater<Integer> create(
-        StockKey key, UpdateContext updateContext, Toolbox toolbox) {
+        StockKey key, UpdateContext updateContext, ELementToolbox ELementToolbox) {
       return new Updater();
     }
 

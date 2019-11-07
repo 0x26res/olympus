@@ -1,8 +1,11 @@
 package org.aa.olympus.impl;
 
 import com.google.common.collect.ImmutableSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementStatus;
@@ -12,7 +15,7 @@ import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.SubscriptionType;
-import org.aa.olympus.api.Toolbox;
+import org.aa.olympus.api.ELementToolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
 import org.aa.olympus.utils.OlympusAssert;
@@ -44,6 +47,7 @@ public class TestAllState {
 
   private Engine engine;
   ElementView<String, String> handle;
+  ElementView<String, String> subscirber;
 
   @Before
   public void setUp() {
@@ -51,32 +55,32 @@ public class TestAllState {
         Olympus.builder()
             .registerSource(SOURCE)
             .registerInnerEntity(ENTITY, new MessagePasserManager(), ImmutableSet.of(SOURCE))
+            .registerSimpleEntity(SUBSCIRBER, p -> new DummyConcatenator(), ImmutableSet.of(ENTITY))
             .build();
     handle = engine.getElement(ENTITY, "foo");
+    subscirber = engine.getElement(SUBSCIRBER, "foo");
   }
 
   @Test
   public void testWorkflow() {
 
-    Assert.assertSame(UpdateContextImpl.NONE, handle.getUpdateContext());
-    Assert.assertEquals(ElementStatus.SHADOW, handle.getStatus());
+    OlympusAssert.assertElement(handle, ElementStatus.SHADOW, null, 0);
 
     engine.runOnce();
-    Assert.assertSame(UpdateContextImpl.NONE, handle.getUpdateContext());
-    Assert.assertEquals(ElementStatus.SHADOW, handle.getStatus());
+    OlympusAssert.assertElement(handle, ElementStatus.SHADOW, null, 0);
 
     engine.setSourceState(SOURCE, "foo", Message.ofValue(UpdateResult.update("FOO")));
     engine.runOnce();
-    Assert.assertEquals(2, handle.getUpdateContext().getUpdateId());
-    Assert.assertEquals("FOO", handle.getState());
-    Assert.assertEquals(ElementStatus.OK, handle.getStatus());
+    OlympusAssert.assertElement(handle, ElementStatus.OK, "FOO", 2);
+    OlympusAssert.assertElement(subscirber, ElementStatus.OK, "FOO", 2);
 
     engine.setSourceState(SOURCE, "foo", new Message(new RaiseSupplier()));
     engine.runOnce();
-    Assert.assertEquals(ElementStatus.ERROR, handle.getStatus());
 
-    // TODO: test downstream fails
+    OlympusAssert.assertElement(handle, ElementStatus.ERROR, null, 3);
+    Assert.assertEquals("Not today", handle.getError().getMessage());
 
+    OlympusAssert.assertElement(subscirber, ElementStatus.UPSTREAM_ERROR, null, 3);
   }
 
   @Test
@@ -152,7 +156,7 @@ public class TestAllState {
 
     @Override
     public UpdateResult<String> update(
-        String previous, UpdateContext updateContext, Toolbox toolbox) {
+        String previous, UpdateContext updateContext, ELementToolbox ELementToolbox) {
       return source.getState().supplier.get();
     }
 
@@ -166,13 +170,32 @@ public class TestAllState {
   public static final class MessagePasserManager implements ElementManager<String, String> {
 
     @Override
-    public ElementUpdater<String> create(String key, UpdateContext updateContext, Toolbox toolbox) {
+    public ElementUpdater<String> create(String key, UpdateContext updateContext, ELementToolbox ELementToolbox) {
       return new MessagePasserUpdater();
     }
 
     @Override
     public <K2> void onNewKey(EntityKey<K2, ?> entityKey, K2 key, Consumer<String> toNotify) {
       toNotify.accept((String) key);
+    }
+  }
+
+  public static final class DummyConcatenator implements ElementUpdater<String> {
+
+    final List<ElementHandle<?, String>> handles = new ArrayList<>();
+
+    @Override
+    public UpdateResult<String> update(
+        String previous, UpdateContext updateContext, ELementToolbox ELementToolbox) {
+      return UpdateResult.maybe(
+          handles.stream().map(ElementView::getState).collect(Collectors.joining()));
+    }
+
+    @Override
+    public <K2, S2> boolean onNewElement(ElementHandle<K2, S2> handle) {
+      handle.subscribe(SubscriptionType.STRONG);
+      handles.add((ElementHandle<?, String>) handle);
+      return true;
     }
   }
 }

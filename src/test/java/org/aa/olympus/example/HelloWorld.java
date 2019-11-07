@@ -8,7 +8,7 @@ import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.Olympus;
-import org.aa.olympus.api.Toolbox;
+import org.aa.olympus.api.ELementToolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
 import org.aa.olympus.impl.UnsupportedEntityException;
@@ -26,7 +26,7 @@ public class HelloWorld {
 
     @Override
     public UpdateResult<String> update(
-        String previous, UpdateContext updateContext, Toolbox toolbox) {
+        String previous, UpdateContext updateContext, ELementToolbox ELementToolbox) {
       if (left != null && right != null) {
         return UpdateResult.maybe(left.getState() + ' ' + right.getState());
       } else {
@@ -51,7 +51,7 @@ public class HelloWorld {
   public static class ConcatenatorElementManager implements ElementManager<String, String> {
 
     @Override
-    public ElementUpdater<String> create(String key, UpdateContext updateContext, Toolbox toolbox) {
+    public ElementUpdater<String> create(String key, UpdateContext updateContext, ELementToolbox ELementToolbox) {
       return new Concatenator();
     }
 

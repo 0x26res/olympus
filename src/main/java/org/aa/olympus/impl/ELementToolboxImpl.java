@@ -4,17 +4,17 @@ import com.google.common.base.Preconditions;
 import java.util.Map;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.EntityKey;
-import org.aa.olympus.api.Toolbox;
+import org.aa.olympus.api.ELementToolbox;
 
 // TODO: One toolbox per ElementUnit
 // TODO: prefetch deps
 // TODO: how to deal with multiple subscriptions
-public class ToolboxImpl implements Toolbox {
+public class ELementToolboxImpl implements ELementToolbox {
 
   private final Map<EntityKey, EntityManager> dependencies;
   private final ElementUnit unit;
 
-  public ToolboxImpl(Map<EntityKey, EntityManager> dependencies, ElementUnit unit) {
+  public ELementToolboxImpl(Map<EntityKey, EntityManager> dependencies, ElementUnit unit) {
     this.dependencies = dependencies;
     this.unit = unit;
   }

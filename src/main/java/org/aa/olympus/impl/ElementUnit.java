@@ -12,7 +12,7 @@ import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.ElementView;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.SubscriptionType;
-import org.aa.olympus.api.Toolbox;
+import org.aa.olympus.api.ELementToolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
 import org.aa.olympus.api.UpdateResult.UpdateStatus;
@@ -24,11 +24,13 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
   private final K key;
   private final Set<ElementHandleAdapter> broadcasters = new HashSet<>();
   private final Set<ElementHandleAdapter<K, S>> subscribers = new HashSet<>();
+
   private ElementUpdater<S> updater;
   private ElementStatus status;
   private S state;
   private int notifications;
   private UpdateContext updateContext = UpdateContextImpl.NONE;
+  private Exception lastError;
 
   ElementUnit(EngineContext engineContext, EntityKey<K, S> entityKey, K key) {
     this.engineContext = engineContext;
@@ -37,7 +39,6 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
     this.updater = null;
     status = ElementStatus.SHADOW;
   }
-
   void setUpdater(ElementUpdater<S> updater) {
     Preconditions.checkNotNull(updater);
     Preconditions.checkState(this.updater == null);
@@ -45,24 +46,24 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
     status = ElementStatus.CREATED;
   }
 
+  @Override
   public EntityKey<K, S> getEntityKey() {
     return entityKey;
   }
 
+  @Override
   public K getKey() {
     return key;
   }
 
+  @Override
   public ElementStatus getStatus() {
     return status;
   }
 
+  @Override
   public S getState() {
     return state;
-  }
-
-  int getNotifications() {
-    return notifications;
   }
 
   @Override
@@ -73,6 +74,21 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
       return defaultState;
     }
   }
+
+  @Override
+  public Exception getError() {
+    if (status == ElementStatus.ERROR) {
+      return Preconditions.checkNotNull(lastError);
+    } else {
+      throw new IllegalStateException(String.format(
+          "Can't request error while status is %s", status));
+    }
+  }
+
+  int getNotifications() {
+    return notifications;
+  }
+
 
   int getUpdateId() {
     return updateContext.getUpdateId();
@@ -90,8 +106,8 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
     ++notifications;
   }
 
-  public void update(Toolbox toolbox) {
-    UpdateResult<S> result = getUpdateResult(toolbox);
+  public void update(ELementToolbox ELementToolbox) {
+    UpdateResult<S> result = getUpdateResult(ELementToolbox);
     if (handleUpdateResult(result)) {
       subscribers.forEach(ElementHandleAdapter::stain);
       this.updateContext = engineContext.getLatestContext();
@@ -99,21 +115,27 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
     this.notifications = 0;
   }
 
-  private UpdateResult<S> getUpdateResult(Toolbox toolbox) {
+  private UpdateResult<S> getUpdateResult(ELementToolbox ELementToolbox) {
     ElementStatus broadcastersStatus = getBroadcastersStatus();
     switch (broadcastersStatus) {
       case OK:
         try {
-          return this.updater.update(state, engineContext.getLatestContext(), toolbox);
+          UpdateResult<S> results = this.updater
+              .update(state, engineContext.getLatestContext(), ELementToolbox);
+          this.lastError = null;
+          return results;
         } catch (Exception e) {
           engineContext
               .getErrorLogger()
               .log(Level.SEVERE, String.format("%s failed: %s", this, e.getMessage()));
+          this.lastError = e;
           return UpdateResult.error();
         }
       case ERROR:
+        this.lastError = null;
         return UpdateResult.upstreamError();
       case NOT_READY:
+        this.lastError = null;
         return UpdateResult.notReady();
       default:
         throw new UnsupportedValueException(ElementStatus.class, broadcastersStatus);
@@ -128,6 +150,7 @@ final class ElementUnit<K, S> implements ElementView<K, S> {
       if (broadcaster.getSubscriptionType() == SubscriptionType.STRONG) {
         switch (broadcaster.getStatus()) {
           case ERROR:
+          case UPSTREAM_ERROR:
             ++failed;
             break;
           case OK:

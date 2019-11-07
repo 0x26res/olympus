@@ -5,7 +5,7 @@ import java.util.function.Consumer;
 import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.EntityKey;
-import org.aa.olympus.api.Toolbox;
+import org.aa.olympus.api.ELementToolbox;
 import org.aa.olympus.api.UpdateContext;
 
 final class SourceManager<K, S> {
@@ -42,7 +42,7 @@ final class SourceManager<K, S> {
     }
 
     @Override
-    public ElementUpdater<S> create(K key, UpdateContext updateContext, Toolbox toolbox) {
+    public ElementUpdater<S> create(K key, UpdateContext updateContext, ELementToolbox ELementToolbox) {
       SourceUnit<K, S> unit = new SourceUnit<>();
       units.put(key, unit);
       return unit;

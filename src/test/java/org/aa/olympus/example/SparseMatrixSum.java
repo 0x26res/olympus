@@ -16,7 +16,7 @@ import org.aa.olympus.api.EngineBuilder;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.SubscriptionType;
-import org.aa.olympus.api.Toolbox;
+import org.aa.olympus.api.ELementToolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
 import org.aa.olympus.impl.UnsupportedEntityException;
@@ -115,7 +115,7 @@ public class SparseMatrixSum {
 
     @Override
     public ElementUpdater<Integer> create(
-        Position key, UpdateContext updateContext, Toolbox toolbox) {
+        Position key, UpdateContext updateContext, ELementToolbox ELementToolbox) {
       Preconditions.checkArgument(key.col == -1 || key.row == -1);
       return new Aggregator(CELL);
     }
@@ -139,7 +139,7 @@ public class SparseMatrixSum {
 
     @Override
     public ElementUpdater<Integer> create(
-        Position key, UpdateContext updateContext, Toolbox toolbox) {
+        Position key, UpdateContext updateContext, ELementToolbox ELementToolbox) {
       Preconditions.checkArgument(key.row < 0 && key.col < 0);
       return new Aggregator(AGGREGATE);
     }
@@ -164,7 +164,7 @@ public class SparseMatrixSum {
 
     @Override
     public UpdateResult<Integer> update(
-        Integer previous, UpdateContext updateContext, Toolbox toolbox) {
+        Integer previous, UpdateContext updateContext, ELementToolbox ELementToolbox) {
       return UpdateResult.update(elements.stream().mapToInt(ElementHandle::getState).sum());
     }
 

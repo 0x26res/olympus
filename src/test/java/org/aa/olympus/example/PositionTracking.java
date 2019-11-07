@@ -14,7 +14,7 @@ import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EngineBuilder;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.Olympus;
-import org.aa.olympus.api.Toolbox;
+import org.aa.olympus.api.ELementToolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
 import org.junit.Assert;
@@ -126,7 +126,7 @@ public class PositionTracking {
 
     @Override
     public ElementUpdater<Integer> create(
-        PositionKey key, UpdateContext updateContext, Toolbox toolbox) {
+        PositionKey key, UpdateContext updateContext, ELementToolbox ELementToolbox) {
       return new PositionUpdater(subKey);
     }
 
@@ -147,7 +147,7 @@ public class PositionTracking {
 
     @Override
     public UpdateResult<Integer> update(
-        Integer previous, UpdateContext updateContext, Toolbox toolbox) {
+        Integer previous, UpdateContext updateContext, ELementToolbox ELementToolbox) {
       return UpdateResult.update(children.stream().mapToInt(ElementHandle::getState).sum());
     }
 

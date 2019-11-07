@@ -10,7 +10,7 @@ import org.aa.olympus.api.Engine;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.SubscriptionType;
-import org.aa.olympus.api.Toolbox;
+import org.aa.olympus.api.ELementToolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
 import org.junit.Assert;
@@ -67,7 +67,7 @@ public class TestMaybe {
 
     @Override
     public UpdateResult<String> update(
-        String previous, UpdateContext updateContext, Toolbox toolbox) {
+        String previous, UpdateContext updateContext, ELementToolbox ELementToolbox) {
       return UpdateResult.maybe(input.getState());
     }
 
@@ -80,8 +80,8 @@ public class TestMaybe {
   private static class PassThroughManager implements ElementManager<String, String> {
 
     @Override
-    public ElementUpdater<String> create(String key, UpdateContext updateContext, Toolbox toolbox) {
-      return new PassThroughUpdater(toolbox.get(SOURCE, key).subscribe(SubscriptionType.STRONG));
+    public ElementUpdater<String> create(String key, UpdateContext updateContext, ELementToolbox ELementToolbox) {
+      return new PassThroughUpdater(ELementToolbox.get(SOURCE, key).subscribe(SubscriptionType.STRONG));
     }
 
     @Override

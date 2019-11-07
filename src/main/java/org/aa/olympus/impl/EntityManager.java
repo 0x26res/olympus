@@ -12,7 +12,7 @@ import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementStatus;
 import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.EntityKey;
-import org.aa.olympus.api.Toolbox;
+import org.aa.olympus.api.ELementToolbox;
 
 final class EntityManager<K, S> {
 
@@ -56,9 +56,9 @@ final class EntityManager<K, S> {
       units.put(key, unit);
     }
     if (unit.getStatus() == ElementStatus.SHADOW && create) {
-      Toolbox toolbox = new ToolboxImpl(dependencies, unit);
+      ELementToolbox ELementToolbox = new ELementToolboxImpl(dependencies, unit);
       ElementUpdater<S> updater =
-          elementManager.create(key, engineContext.getLatestContext(), toolbox);
+          elementManager.create(key, engineContext.getLatestContext(), ELementToolbox);
       Preconditions.checkNotNull(
           updater,
           "%s an not refuse to create a %s",
@@ -72,7 +72,7 @@ final class EntityManager<K, S> {
   void run() {
     for (ElementUnit<K, S> element : units.values()) {
       if (element.getNotifications() != 0) {
-        element.update(new ToolboxImpl(dependencies, element));
+        element.update(new ELementToolboxImpl(dependencies, element));
       }
     }
   }

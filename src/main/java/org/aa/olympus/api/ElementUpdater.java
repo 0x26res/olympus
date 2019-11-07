@@ -4,7 +4,7 @@ package org.aa.olympus.api;
 public interface ElementUpdater<S> {
 
   /** Called when the state needs to be updated because of upstream changes or timer */
-  UpdateResult<S> update(S previous, UpdateContext updateContext, Toolbox toolbox);
+  UpdateResult<S> update(S previous, UpdateContext updateContext, ELementToolbox ELementToolbox);
 
   /**
    * Called when a new element this handle may be interested is created

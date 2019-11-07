@@ -5,7 +5,7 @@ import org.aa.olympus.api.ElementManager;
 import org.aa.olympus.api.ElementUpdater;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.SimpleElementManager;
-import org.aa.olympus.api.Toolbox;
+import org.aa.olympus.api.ELementToolbox;
 import org.aa.olympus.api.UpdateContext;
 
 /** Wraps a {@link SimpleElementManager} into a {@link ElementManager} */
@@ -19,7 +19,7 @@ public final class SimpleElementManagerAdapter<K, S> implements ElementManager<K
   }
 
   @Override
-  public ElementUpdater<S> create(K key, UpdateContext updateContext, Toolbox toolbox) {
+  public ElementUpdater<S> create(K key, UpdateContext updateContext, ELementToolbox ELementToolbox) {
     return simpleElementManager.create(key);
   }
 

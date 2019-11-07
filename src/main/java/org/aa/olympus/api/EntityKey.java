@@ -3,7 +3,7 @@ package org.aa.olympus.api;
 import com.google.common.reflect.TypeToken;
 
 /** Key for an engine entity. This has value semantics */
-// TODO: add a qualified key (entity key + element key)
+// TODO: add a qualified element key (entity key + key of the element)
 @SuppressWarnings("UnstableApiUsage")
 public interface EntityKey<K, S> {
 

@@ -8,7 +8,7 @@ import java.util.function.Consumer;
 public interface ElementManager<K, S> {
 
   /** Called when a new element needs to be created within this {@link EntityKey} */
-  ElementUpdater<S> create(K elementKey, UpdateContext updateContext, Toolbox toolbox);
+  ElementUpdater<S> create(K elementKey, UpdateContext updateContext, ELementToolbox ELementToolbox);
 
   /**
    * Called when an element is created within an upstream {@link EntityKey}

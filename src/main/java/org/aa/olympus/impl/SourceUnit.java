@@ -3,7 +3,7 @@ package org.aa.olympus.impl;
 import com.google.common.base.Preconditions;
 import org.aa.olympus.api.ElementHandle;
 import org.aa.olympus.api.ElementUpdater;
-import org.aa.olympus.api.Toolbox;
+import org.aa.olympus.api.ELementToolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
 
@@ -27,7 +27,7 @@ final class SourceUnit<K, S> implements ElementUpdater<S> {
   }
 
   @Override
-  public UpdateResult<S> update(S previous, UpdateContext updateContext, Toolbox toolbox) {
+  public UpdateResult<S> update(S previous, UpdateContext updateContext, ELementToolbox ELementToolbox) {
     if (lastState == null) {
       // TODO: there's a potential memory leak here, unit should delete themselves from the map
       return UpdateResult.delete();

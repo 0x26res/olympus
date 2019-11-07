@@ -16,7 +16,7 @@ import org.aa.olympus.api.EngineBuilder;
 import org.aa.olympus.api.EntityKey;
 import org.aa.olympus.api.Olympus;
 import org.aa.olympus.api.SubscriptionType;
-import org.aa.olympus.api.Toolbox;
+import org.aa.olympus.api.ELementToolbox;
 import org.aa.olympus.api.UpdateContext;
 import org.aa.olympus.api.UpdateResult;
 import org.aa.olympus.utils.OlympusAssert;
@@ -185,7 +185,7 @@ public class IndexCalculatorExample {
   public static class IndexPricesEntityManager implements ElementManager<String, Double> {
 
     @Override
-    public ElementUpdater<Double> create(String key, UpdateContext updateContext, Toolbox toolbox) {
+    public ElementUpdater<Double> create(String key, UpdateContext updateContext, ELementToolbox ELementToolbox) {
       return new IndexPricesElementUpdater();
     }
 
@@ -210,13 +210,13 @@ public class IndexCalculatorExample {
 
     @Override
     public UpdateResult<Double> update(
-        Double previous, UpdateContext updateContext, Toolbox toolbox) {
+        Double previous, UpdateContext updateContext, ELementToolbox ELementToolbox) {
 
       if (composition.hasUpdated()) {
         elements.forEach(p -> p.subscribe(SubscriptionType.NONE));
         elements.clear();
         for (String stock : composition.getState().weights.keySet()) {
-          elements.add(toolbox.get(STOCK_PRICES, stock).subscribe(SubscriptionType.STRONG));
+          elements.add(ELementToolbox.get(STOCK_PRICES, stock).subscribe(SubscriptionType.STRONG));
         }
       }
       // This could be done more efficiently (but less readable) by storing both weight and
